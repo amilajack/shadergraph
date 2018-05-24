@@ -1,99 +1,136 @@
-class Snippet
-  @index: 0
-  @namespace: () -> "_sn_#{++Snippet.index}_"
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+class Snippet {
+  static initClass() {
+    this.index = 0;
+  }
+  static namespace() { return `_sn_${++Snippet.index}_`; }
 
-  @load: (language, name, code) ->
-    program          = language.parse   name, code
-    [sigs, compiler] = language.compile program
-    new Snippet language, sigs, compiler, name, code
+  static load(language, name, code) {
+    const program          = language.parse(name, code);
+    const [sigs, compiler] = Array.from(language.compile(program));
+    return new Snippet(language, sigs, compiler, name, code);
+  }
 
-  constructor: (@language, @_signatures, @_compiler, @_name, @_original) ->
-    @namespace  = null
-    @code       = null
+  constructor(language, _signatures, _compiler, _name, _original) {
+    this.language = language;
+    this._signatures = _signatures;
+    this._compiler = _compiler;
+    this._name = _name;
+    this._original = _original;
+    this.namespace  = null;
+    this.code       = null;
 
-    @main       = null
-    @entry      = null
+    this.main       = null;
+    this.entry      = null;
 
-    @uniforms   = null
-    @externals  = null
-    @symbols    = null
-    @attributes = null
-    @varyings   = null
+    this.uniforms   = null;
+    this.externals  = null;
+    this.symbols    = null;
+    this.attributes = null;
+    this.varyings   = null;
 
-    # Tidy up object for export
-    delete @language    if !@language
-    delete @_signatures if !@_signatures
-    delete @_compiler   if !@_compiler
-    delete @_original   if !@_original
+    // Tidy up object for export
+    if (!this.language) { delete this.language; }
+    if (!this._signatures) { delete this._signatures; }
+    if (!this._compiler) { delete this._compiler; }
+    if (!this._original) { delete this._original; }
 
-    # Insert snippet name if not provided
-    @_name = @_signatures?.main.name if !@_name
+    // Insert snippet name if not provided
+    if (!this._name) { this._name = this._signatures != null ? this._signatures.main.name : undefined; }
+  }
 
-  clone: () ->
-    new Snippet @language, @_signatures, @_compiler, @_name, @_original
+  clone() {
+    return new Snippet(this.language, this._signatures, this._compiler, this._name, this._original);
+  }
 
-  bind: (config, uniforms, namespace, defines) ->
+  bind(config, uniforms, namespace, defines) {
 
-    # Alt syntax (namespace, uniforms, defines)
-    if uniforms == '' + uniforms
-      [namespace, uniforms, defines] = [uniforms, namespace ? {}, defines ? {}]
-    # Alt syntax (uniforms, defines)
-    else if namespace != '' + namespace
-      [defines, namespace] = [namespace ? {}, undefined]
+    // Alt syntax (namespace, uniforms, defines)
+    let left;
+    let v;
+    if (uniforms === (`${uniforms}`)) {
+      [namespace, uniforms, defines] = Array.from([uniforms, namespace != null ? namespace : {}, defines != null ? defines : {}]);
+    // Alt syntax (uniforms, defines)
+    } else if (namespace !== (`${namespace}`)) {
+      [defines, namespace] = Array.from([namespace != null ? namespace : {}, undefined]);
+    }
 
-    # Prepare data structure
-    @main       = @_signatures.main
-    @namespace  = namespace ? @namespace ? Snippet.namespace()
-    @entry      = @namespace + @main.name
+    // Prepare data structure
+    this.main       = this._signatures.main;
+    this.namespace  = (left = namespace != null ? namespace : this.namespace) != null ? left : Snippet.namespace();
+    this.entry      = this.namespace + this.main.name;
 
-    @uniforms   = {}
-    @varyings   = {}
-    @attributes = {}
-    @externals  = {}
-    @symbols    = []
-    exist       = {}
-    exceptions  = {}
+    this.uniforms   = {};
+    this.varyings   = {};
+    this.attributes = {};
+    this.externals  = {};
+    this.symbols    = [];
+    const exist       = {};
+    const exceptions  = {};
 
-    # Handle globals and locals for prefixing
-    global = (name) ->
-      exceptions[name] = true
-      name
-    local  = (name) =>
-      @namespace + name
+    // Handle globals and locals for prefixing
+    const global = function(name) {
+      exceptions[name] = true;
+      return name;
+    };
+    const local  = name => {
+      return this.namespace + name;
+    };
 
-    # Apply config
-    global key for key in config.globals if config.globals
-    _u = if config.globalUniforms   then global else local
-    _v = if config.globalVaryings   then global else local
-    _a = if config.globalAttributes then global else local
-    _e = local
+    // Apply config
+    if (config.globals) { for (let key of Array.from(config.globals)) { global(key); } }
+    const _u = config.globalUniforms   ? global : local;
+    const _v = config.globalVaryings   ? global : local;
+    const _a = config.globalAttributes ? global : local;
+    const _e = local;
 
-    # Build finalized properties
-    x = (def)       =>       exist[def.name]           = true
-    u = (def, name) =>   @uniforms[_u name ? def.name] = def
-    v = (def)       =>   @varyings[_v def.name]        = def
-    a = (def)       => @attributes[_a def.name]        = def
-    e = (def)       =>
-                        name = _e def.name
-                        @externals[name]               = def
-                        @symbols.push name
+    // Build finalized properties
+    const x = def       => {       return exist[def.name]           = true; };
+    const u = (def, name) => {   return this.uniforms[_u(name != null ? name : def.name)] = def; };
+    v = def       => {   return this.varyings[_v(def.name)]        = def; };
+    const a = def       => { return this.attributes[_a(def.name)]        = def; };
+    const e = def       => {
+                        const name = _e(def.name);
+                        this.externals[name]               = def;
+                        return this.symbols.push(name);
+                      };
 
-    redef = (def) -> {type: def.type, name: def.name, value: def.value}
+    const redef = def => ({type: def.type, name: def.name, value: def.value});
 
-    x def       for def in @_signatures.uniform
-    u redef def for def in @_signatures.uniform
-    v redef def for def in @_signatures.varying
-    e def       for def in @_signatures.external
-    a redef def for def in @_signatures.attribute
-    u def, name for name, def of uniforms when exist[name]
+    for (var def of Array.from(this._signatures.uniform)) { x(def); }
+    for (def of Array.from(this._signatures.uniform)) { u(redef(def)); }
+    for (def of Array.from(this._signatures.varying)) { v(redef(def)); }
+    for (def of Array.from(this._signatures.external)) { e(def); }
+    for (def of Array.from(this._signatures.attribute)) { a(redef(def)); }
+    for (let name in uniforms) { def = uniforms[name]; if (exist[name]) { u(def, name); } }
 
-    @body = @code = @_compiler @namespace, exceptions, defines
+    this.body = (this.code = this._compiler(this.namespace, exceptions, defines));
 
-    # Adds defs to original snippet for inspection
-    if defines
-      defs = ("#define #{k} #{v}" for k, v of defines).join '\n'
-      @_original = [defs, "//----------------------------------------", @_original].join "\n" if defs.length
+    // Adds defs to original snippet for inspection
+    if (defines) {
+      const defs = ((() => {
+        const result = [];
+        for (let k in defines) {
+          v = defines[k];
+          result.push(`#define ${k} ${v}`);
+        }
+        return result;
+      })()).join('\n');
+      if (defs.length) { this._original = [defs, "//----------------------------------------", this._original].join("\n"); }
+    }
 
-    null
+    return null;
+  }
+}
+Snippet.initClass();
 
-module.exports = Snippet
+module.exports = Snippet;

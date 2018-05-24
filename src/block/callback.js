@@ -1,73 +1,103 @@
-Graph   = require '../graph'
-Block   = require './block'
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const Graph   = require('../graph');
+const Block   = require('./block');
 
-###
+/*
   Re-use a subgraph as a callback
-###
-class Callback extends Block
-  constructor: (@graph) ->
-    super
+*/
+class Callback extends Block {
+  constructor(graph) {
+    {
+      // Hack: trick Babel/TypeScript into allowing this before super.
+      if (false) { super(); }
+      let thisFn = (() => { return this; }).toString();
+      let thisName = thisFn.slice(thisFn.indexOf('return') + 6 + 1, thisFn.indexOf(';')).trim();
+      eval(`${thisName} = this;`);
+    }
+    this.graph = graph;
+    super(...arguments);
+  }
 
-  refresh: () ->
-    super
-    delete @subroutine
+  refresh() {
+    super.refresh(...arguments);
+    return delete this.subroutine;
+  }
 
-  clone: () ->
-    new Callback @graph
+  clone() {
+    return new Callback(this.graph);
+  }
 
-  makeOutlets: () ->
-    @make()
+  makeOutlets() {
+    this.make();
 
-    outlets = []
-    ins     = []
-    outs    = []
+    const outlets = [];
+    let ins     = [];
+    let outs    = [];
 
-    # Pass-through existing callbacks
-    # Collect open inputs/outputs
-    handle = (outlet, list) =>
-      if outlet.meta.callback
-        if outlet.inout == Graph.IN
-          # Dupe outlet and create two-way link between cloned outlets
-          dupe = outlet.dupe()
-          dupe  .meta.child ?= outlet
-          outlet.meta.parent = dupe
+    // Pass-through existing callbacks
+    // Collect open inputs/outputs
+    const handle = (outlet, list) => {
+      if (outlet.meta.callback) {
+        if (outlet.inout === Graph.IN) {
+          // Dupe outlet and create two-way link between cloned outlets
+          const dupe = outlet.dupe();
+          if (dupe  .meta.child == null) { dupe.meta.child = outlet; }
+          outlet.meta.parent = dupe;
 
-          outlets.push dupe
-      else
-        list.push outlet.type
+          return outlets.push(dupe);
+        }
+      } else {
+        return list.push(outlet.type);
+      }
+    };
 
-    handle outlet, ins  for outlet in @graph.inputs()
-    handle outlet, outs for outlet in @graph.outputs()
+    for (var outlet of Array.from(this.graph.inputs())) { handle(outlet, ins); }
+    for (outlet of Array.from(this.graph.outputs())) { handle(outlet, outs); }
 
-    # Merge inputs/outputs into new callback signature
-    ins  = ins.join  ','
-    outs = outs.join ','
-    type = "(#{ins})(#{outs})"
+    // Merge inputs/outputs into new callback signature
+    ins  = ins.join(',');
+    outs = outs.join(',');
+    const type = `(${ins})(${outs})`;
 
-    outlets.push
-      name:  'callback'
-      type:  type
-      inout: Graph.OUT
-      meta:
-        callback: true
-        def: @subroutine.main
+    outlets.push({
+      name:  'callback',
+      type,
+      inout: Graph.OUT,
+      meta: {
+        callback: true,
+        def: this.subroutine.main
+      }
+    });
 
-    outlets
+    return outlets;
+  }
 
-  make: () ->
-    @subroutine = @graph.compile @namespace
+  make() {
+    return this.subroutine = this.graph.compile(this.namespace);
+  }
 
-  export: (layout, depth) ->
-    return unless layout.visit @namespace, depth
+  export(layout, depth) {
+    if (!layout.visit(this.namespace, depth)) { return; }
 
-    @_link     @subroutine, layout, depth
-    @graph.export layout, depth
+    this._link(this.subroutine, layout, depth);
+    return this.graph.export(layout, depth);
+  }
 
-  call: (program, depth) ->
-    @_require  @subroutine, program, depth
+  call(program, depth) {
+    return this._require(this.subroutine, program, depth);
+  }
 
-  callback: (layout, depth, name, external, outlet) ->
-    @_include  @subroutine, layout, depth
-    @_callback @subroutine, layout, depth, name, external, outlet
+  callback(layout, depth, name, external, outlet) {
+    this._include(this.subroutine, layout, depth);
+    return this._callback(this.subroutine, layout, depth, name, external, outlet);
+  }
+}
 
-module.exports = Callback
+module.exports = Callback;

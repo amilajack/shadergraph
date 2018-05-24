@@ -1,173 +1,210 @@
-# AST node parsers
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+// AST node parsers
 
-module.exports = decl = {}
+let decl;
+module.exports = (decl = {});
 
-decl.in    = 0
-decl.out   = 1
-decl.inout = 2
+decl.in    = 0;
+decl.out   = 1;
+decl.inout = 2;
 
-get = (n) -> n.token.data
+const get = n => n.token.data;
 
-decl.node = (node) ->
+decl.node = function(node) {
 
-  if node.children[5]?.type == 'function'
-    decl.function(node)
+  if ((node.children[5] != null ? node.children[5].type : undefined) === 'function') {
+    return decl.function(node);
 
-  else if node.token?.type == 'keyword'
-    decl.external(node)
+  } else if ((node.token != null ? node.token.type : undefined) === 'keyword') {
+    return decl.external(node);
+  }
+};
 
-decl.external = (node) ->
-  #    console.log 'external', node
-  c = node.children
+decl.external = function(node) {
+  //    console.log 'external', node
+  let c = node.children;
 
-  storage = get c[1]
-  struct  = get c[3]
-  type    = get c[4]
-  list    = c[5]
+  let storage = get(c[1]);
+  const struct  = get(c[3]);
+  const type    = get(c[4]);
+  const list    = c[5];
 
-  storage = 'global' if storage !in ['attribute', 'uniform', 'varying']
+  if (!['attribute', 'uniform', 'varying'].includes(storage)) { storage = 'global'; }
 
-  out = []
+  const out = [];
 
-  for c, i in list.children
-    if c.type == 'ident'
-      ident   = get c
-      next    = list.children[i + 1]
-      quant   = (next?.type == 'quantifier')
+  for (let i = 0; i < list.children.length; i++) {
+    c = list.children[i];
+    if (c.type === 'ident') {
+      const ident   = get(c);
+      const next    = list.children[i + 1];
+      const quant   = ((next != null ? next.type : undefined) === 'quantifier');
 
-      out.push
-        decl: 'external'
-        storage: storage
-        type: type
-        ident: ident
-        quant: !!quant
+      out.push({
+        decl: 'external',
+        storage,
+        type,
+        ident,
+        quant: !!quant,
         count: quant
+      });
+    }
+  }
 
-  out
+  return out;
+};
 
-decl.function = (node) ->
-  c = node.children
+decl.function = function(node) {
+  const c = node.children;
 
-  #    console.log 'function', node
+  //    console.log 'function', node
 
-  storage = get c[1]
-  struct  = get c[3]
-  type    = get c[4]
-  func    = c[5]
-  ident   = get func.children[0]
-  args    = func.children[1]
-  body    = func.children[2]
+  const storage = get(c[1]);
+  const struct  = get(c[3]);
+  const type    = get(c[4]);
+  const func    = c[5];
+  const ident   = get(func.children[0]);
+  const args    = func.children[1];
+  const body    = func.children[2];
 
-  decls = (decl.argument(child) for child in args.children)
+  const decls = (Array.from(args.children).map((child) => decl.argument(child)));
 
-  [
-    decl: 'function'
-    storage: storage
-    type: type
-    ident: ident
-    body: !!body
+  return [{
+    decl: 'function',
+    storage,
+    type,
+    ident,
+    body: !!body,
     args: decls
-  ]
+  }
+  ];
+};
 
-decl.argument = (node) ->
-  c = node.children
+decl.argument = function(node) {
+  const c = node.children;
 
-  #    console.log 'argument', node
+  //    console.log 'argument', node
 
-  storage = get c[1]
-  inout   = get c[2]
-  type    = get c[4]
-  list    = c[5]
-  ident   = get list.children[0]
-  quant   = list.children[1]
+  const storage = get(c[1]);
+  const inout   = get(c[2]);
+  const type    = get(c[4]);
+  const list    = c[5];
+  const ident   = get(list.children[0]);
+  const quant   = list.children[1];
 
-  count   = if quant then quant.children[0].token.data
+  const count   = quant ? quant.children[0].token.data : undefined;
 
-  decl: 'argument'
-  storage: storage
-  inout: inout
-  type: type
-  ident: ident
-  quant: !!quant
-  count: count
+  return {
+    decl: 'argument',
+    storage,
+    inout,
+    type,
+    ident,
+    quant: !!quant,
+    count
+  };
+};
 
-decl.param = (dir, storage, spec, quant, count) ->
-  prefix = []
-  prefix.push storage if storage?
-  prefix.push spec if spec?
-  prefix.push ''
+decl.param = function(dir, storage, spec, quant, count) {
+  let prefix = [];
+  if (storage != null) { prefix.push(storage); }
+  if (spec != null) { prefix.push(spec); }
+  prefix.push('');
 
-  prefix = prefix.join ' '
-  suffix = if quant then '[' + count + ']' else ''
-  dir += ' ' if dir != ''
+  prefix = prefix.join(' ');
+  const suffix = quant ? `[${count}]` : '';
+  if (dir !== '') { dir += ' '; }
 
-  f = (name, long) -> (if long then dir else '') + "#{prefix}#{name}#{suffix}"
-  f.split = (dir) -> decl.param dir, storage, spec, quant, count
+  const f = (name, long) => (long ? dir : '') + `${prefix}${name}${suffix}`;
+  f.split = dir => decl.param(dir, storage, spec, quant, count);
 
-  f
+  return f;
+};
 
-# Three.js sugar
-win = typeof window != 'undefined'
-threejs = win && !!window.THREE
+// Three.js sugar
+const win = typeof window !== 'undefined';
+const threejs = win && !!window.THREE;
 
-defaults =
-  int:         0
-  float:       0
-  vec2:        if threejs then THREE.Vector2 else null
-  vec3:        if threejs then THREE.Vector3 else null
-  vec4:        if threejs then THREE.Vector4 else null
-  mat2:        null
-  mat3:        if threejs then THREE.Matrix3 else null
-  mat4:        if threejs then THREE.Matrix4 else null
-  sampler2D:   0
+const defaults = {
+  int:         0,
+  float:       0,
+  vec2:        threejs ? THREE.Vector2 : null,
+  vec3:        threejs ? THREE.Vector3 : null,
+  vec4:        threejs ? THREE.Vector4 : null,
+  mat2:        null,
+  mat3:        threejs ? THREE.Matrix3 : null,
+  mat4:        threejs ? THREE.Matrix4 : null,
+  sampler2D:   0,
   samplerCube: 0
+};
 
-three =
-  int:         'i'
-  float:       'f'
-  vec2:        'v2'
-  vec3:        'v3'
-  vec4:        'v4'
-  mat2:        'm2'
-  mat3:        'm3'
-  mat4:        'm4'
-  sampler2D:   't'
+const three = {
+  int:         'i',
+  float:       'f',
+  vec2:        'v2',
+  vec3:        'v3',
+  vec4:        'v4',
+  mat2:        'm2',
+  mat3:        'm3',
+  mat4:        'm4',
+  sampler2D:   't',
   samplerCube: 't'
+};
 
-decl.type = (name, spec, quant, count, dir, storage) ->
+decl.type = function(name, spec, quant, count, dir, storage) {
 
-  dirs =
-    in:    decl.in
-    out:   decl.out
+  const dirs = {
+    in:    decl.in,
+    out:   decl.out,
     inout: decl.inout
+  };
 
-  storages =
-    const: 'const'
+  const storages =
+    {const: 'const'};
 
-  type    = three[spec]
-  type   += 'v' if quant
+  let type    = three[spec];
+  if (quant) { type   += 'v'; }
 
-  value   = defaults[spec]
-  value   = new value if value?.call
-  value   = [value]   if quant
+  let value   = defaults[spec];
+  if (value != null ? value.call : undefined) { value   = new value; }
+  if (quant) { value   = [value]; }
 
-  inout   = dirs[dir] ? dirs.in
-  storage = storages[storage]
+  const inout   = dirs[dir] != null ? dirs[dir] : dirs.in;
+  storage = storages[storage];
 
-  param   = decl.param dir, storage, spec, quant, count
-  new Definition name, type, spec, param, value, inout
+  const param   = decl.param(dir, storage, spec, quant, count);
+  return new Definition(name, type, spec, param, value, inout);
+};
 
-class Definition
-  constructor: (@name, @type, @spec, @param, @value, @inout, @meta) ->
+class Definition {
+  constructor(name, type, spec, param, value, inout, meta) {
+    this.name = name;
+    this.type = type;
+    this.spec = spec;
+    this.param = param;
+    this.value = value;
+    this.inout = inout;
+    this.meta = meta;
+  }
 
-  split: () ->
-    # Split inouts
-    isIn  = @meta.shadowed?
-    dir   = if isIn then 'in' else 'out'
-    inout = if isIn then decl.in else decl.out
-    param = @param.split dir
-    new Definition @name, @type, @spec, param, @value, inout
+  split() {
+    // Split inouts
+    const isIn  = (this.meta.shadowed != null);
+    const dir   = isIn ? 'in' : 'out';
+    const inout = isIn ? decl.in : decl.out;
+    const param = this.param.split(dir);
+    return new Definition(this.name, this.type, this.spec, param, this.value, inout);
+  }
 
-  copy: (name, meta) ->
-    def = new Definition name ? @name, @type, @spec, @param, @value, @inout, meta
+  copy(name, meta) {
+    let def;
+    return def = new Definition(name != null ? name : this.name, this.type, this.spec, this.param, this.value, this.inout, meta);
+  }
+}
 

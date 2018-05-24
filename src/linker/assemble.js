@@ -1,130 +1,177 @@
-Graph      = require '../graph'
-Priority   = require './priority'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const Graph      = require('../graph');
+const Priority   = require('./priority');
 
-###
+/*
   Program assembler
 
   Builds composite program that can act as new module/snippet
   Unconnected input/outputs and undefined callbacks are exposed in the new global/main scope
   If there is only one call with an identical call signature, a #define is output instead.
-###
-assemble = (language, namespace, calls, requires) ->
+*/
+const assemble = function(language, namespace, calls, requires) {
 
-  generate = language.generate
+  const { generate } = language;
 
-  externals  = {}
-  symbols    = []
-  uniforms   = {}
-  varyings   = {}
-  attributes = {}
-  library    = {}
+  const externals  = {};
+  const symbols    = [];
+  const uniforms   = {};
+  const varyings   = {};
+  const attributes = {};
+  const library    = {};
 
-  process = () ->
+  const process = function() {
 
-    required r.node, r.module for ns, r of requires
+    let body;
+    let ns;
+    for (ns in requires) { const r = requires[ns]; required(r.node, r.module); }
 
-    [body, calls] = handle calls
-    body.entry    = namespace if namespace?
-    main          = generate.build body, calls
+    [body, calls] = Array.from(handle(calls));
+    if (namespace != null) { body.entry    = namespace; }
+    const main          = generate.build(body, calls);
 
-    sorted   = (lib for ns, lib of library).sort (a, b) -> Priority.compare a.priority, b.priority
-    includes = sorted.map (x) -> x.code
-    includes.push main.code
-    code = generate.lines includes
+    const sorted   = ((() => {
+      const result = [];
+      for (ns in library) {
+        const lib = library[ns];
+        result.push(lib);
+      }
+      return result;
+    })()).sort((a, b) => Priority.compare(a.priority, b.priority));
+    const includes = sorted.map(x => x.code);
+    includes.push(main.code);
+    const code = generate.lines(includes);
 
-    # Build new virtual snippet
-    namespace:   main.name
-    library:     library     # Included library functions
-    body:        main.code   # Snippet body
-    code:        code        # Complete snippet (tests/debug)
-    main:        main        # Function signature
-    entry:       main.name   # Entry point name
-    symbols:     symbols
-    externals:   externals
-    uniforms:    uniforms
-    varyings:    varyings
-    attributes:  attributes
+    // Build new virtual snippet
+    return {
+      namespace:   main.name,
+      library,     // Included library functions
+      body:        main.code,   // Snippet body
+      code,        // Complete snippet (tests/debug)
+      main,        // Function signature
+      entry:       main.name,   // Entry point name
+      symbols,
+      externals,
+      uniforms,
+      varyings,
+      attributes
+    };
+  };
 
-  # Sort and process calls
-  handle = (calls) =>
+  // Sort and process calls
+  var handle = calls => {
 
-    calls = (c for ns, c of calls)
-    calls.sort (a, b) -> b.priority - a.priority
+    let c;
+    calls = ((() => {
+      const result = [];
+      for (let ns in calls) {
+        c = calls[ns];
+        result.push(c);
+      }
+      return result;
+    })());
+    calls.sort((a, b) => b.priority - a.priority);
 
-    # Call module in DAG chain
-    call = (node, module, priority) =>
-      include     node, module, priority
-      main      = module.main
-      entry     = module.entry
+    // Call module in DAG chain
+    const call = (node, module, priority) => {
+      include(node, module, priority);
+      const { main }      = module;
+      const { entry }     = module;
 
-      _lookup   = (name) -> lookup     node, name
-      _dangling = (name) -> isDangling node, name
-      generate.call _lookup, _dangling, entry, main.signature, body
+      const _lookup   = name => lookup(node, name);
+      const _dangling = name => isDangling(node, name);
+      return generate.call(_lookup, _dangling, entry, main.signature, body);
+    };
 
-    body = generate.body()
-    call c.node, c.module, c.priority for c in calls
+    var body = generate.body();
+    for (c of Array.from(calls)) { call(c.node, c.module, c.priority); }
 
-    [body, calls]
+    return [body, calls];
+  };
 
-  # Adopt given code as a library at given priority
-  adopt = (namespace, code, priority) ->
-    record = library[namespace]
-    if record?
-      record.priority = Priority.max record.priority, priority
-    else
-      library[namespace] = {code, priority}
+  // Adopt given code as a library at given priority
+  const adopt = function(namespace, code, priority) {
+    const record = library[namespace];
+    if (record != null) {
+      return record.priority = Priority.max(record.priority, priority);
+    } else {
+      return library[namespace] = {code, priority};
+    }
+  };
 
-  # Include snippet for a call
-  include = (node, module, priority) ->
-    priority = Priority.make priority
+  // Include snippet for a call
+  var include = function(node, module, priority) {
+    let def;
+    priority = Priority.make(priority);
 
-    # Adopt snippet's libraries
-    adopt ns, lib.code, Priority.nest priority, lib.priority for ns, lib of module.library
+    // Adopt snippet's libraries
+    for (let ns in module.library) { const lib = module.library[ns]; adopt(ns, lib.code, Priority.nest(priority, lib.priority)); }
 
-    # Adopt snippet body as library
-    adopt module.namespace, module.body, priority
+    // Adopt snippet body as library
+    adopt(module.namespace, module.body, priority);
 
-    # Adopt GL vars
-    (uniforms[key]   = def) for key, def of module.uniforms
-    (varyings[key]   = def) for key, def of module.varyings
-    (attributes[key] = def) for key, def of module.attributes
+    // Adopt GL vars
+    for (var key in module.uniforms) { def = module.uniforms[key]; uniforms[key]   = def; }
+    for (key in module.varyings) { def = module.varyings[key]; varyings[key]   = def; }
+    for (key in module.attributes) { def = module.attributes[key]; attributes[key] = def; }
 
-    required node, module
+    return required(node, module);
+  };
 
-  required = (node, module) ->
-    # Adopt external symbols
-    for key in module.symbols
-      ext = module.externals[key]
-      if isDangling node, ext.name
-        copy = {}
-        copy[k] = v for k, v of ext
-        copy.name = lookup node, ext.name
-        externals[key] = copy
-        symbols.push key
+  var required = (node, module) =>
+    // Adopt external symbols
+    (() => {
+      const result = [];
+      for (let key of Array.from(module.symbols)) {
+        const ext = module.externals[key];
+        if (isDangling(node, ext.name)) {
+          const copy = {};
+          for (let k in ext) { const v = ext[k]; copy[k] = v; }
+          copy.name = lookup(node, ext.name);
+          externals[key] = copy;
+          result.push(symbols.push(key));
+        } else {
+          result.push(undefined);
+        }
+      }
+      return result;
+    })()
+  ;
 
-  # Check for dangling input/output
-  isDangling = (node, name) ->
-    outlet = node.get name
+  // Check for dangling input/output
+  var isDangling = function(node, name) {
+    const outlet = node.get(name);
 
-    if outlet.inout == Graph.IN
-      outlet.input == null
+    if (outlet.inout === Graph.IN) {
+      return outlet.input === null;
 
-    else if outlet.inout == Graph.OUT
-      outlet.output.length == 0
+    } else if (outlet.inout === Graph.OUT) {
+      return outlet.output.length === 0;
+    }
+  };
 
-  # Look up unique name for outlet
-  lookup = (node, name) ->
+  // Look up unique name for outlet
+  var lookup = function(node, name) {
 
-    # Traverse graph edge
-    outlet = node.get name
-    return null unless outlet
+    // Traverse graph edge
+    let outlet = node.get(name);
+    if (!outlet) { return null; }
 
-    outlet = outlet.input if outlet.input
-    name   = outlet.name
+    if (outlet.input) { outlet = outlet.input; }
+    ({ name }   = outlet);
 
-    outlet.id
+    return outlet.id;
+  };
 
-  return process()
+  return process();
+};
 
-module.exports = assemble
+module.exports = assemble;
 

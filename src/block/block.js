@@ -1,108 +1,155 @@
-Graph   = require '../graph'
-Program = require('../linker').Program
-Layout  = require('../linker').Layout
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS104: Avoid inline assignments
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const Graph   = require('../graph');
+const { Program } = require('../linker');
+const { Layout }  = require('../linker');
 
-debug = false
+const debug = false;
 
-class Block
-  @previous = (outlet) -> outlet.input?.node.owner
+class Block {
+  static previous(outlet) { return (outlet.input != null ? outlet.input.node.owner : undefined); }
 
-  constructor: () ->
-    @namespace ?= Program.entry()
-    @node       = new Graph.Node @, @makeOutlets?() ? {}
+  constructor() {
+    let left;
+    if (this.namespace == null) { this.namespace = Program.entry(); }
+    this.node       = new Graph.Node(this, (left = (typeof this.makeOutlets === 'function' ? this.makeOutlets() : undefined)) != null ? left : {});
+  }
 
-  refresh: () ->
-    @node.setOutlets @makeOutlets?() ? {}
+  refresh() {
+    let left;
+    return this.node.setOutlets((left = (typeof this.makeOutlets === 'function' ? this.makeOutlets() : undefined)) != null ? left : {});
+  }
 
-  clone: () ->
-    new Block
+  clone() {
+    return new Block;
+  }
 
-  # Compile a new program starting from this block
-  compile: (language, namespace) ->
-    program = new Program language, namespace ? Program.entry(), @node.graph
-    @call program, 0
-    program.assemble()
+  // Compile a new program starting from this block
+  compile(language, namespace) {
+    const program = new Program(language, namespace != null ? namespace : Program.entry(), this.node.graph);
+    this.call(program, 0);
+    return program.assemble();
+  }
 
-  # Link up programs into a layout, starting from this block
-  link: (language, namespace) ->
-    module = @compile language, namespace
+  // Link up programs into a layout, starting from this block
+  link(language, namespace) {
+    const module = this.compile(language, namespace);
 
-    layout = new Layout language, @node.graph
-    @_include module, layout, 0
-    @export   layout, 0
-    layout.link module
+    const layout = new Layout(language, this.node.graph);
+    this._include(module, layout, 0);
+    this.export(layout, 0);
+    return layout.link(module);
+  }
 
-  # Subclassed methods
-  call:     (program, depth) ->
-  callback: (layout, depth, name, external, outlet) ->
-  export:   (layout, depth) ->
+  // Subclassed methods
+  call(program, depth) {}
+  callback(layout, depth, name, external, outlet) {}
+  export(layout, depth) {}
 
-  # Info string for debugging
-  _info: (suffix) ->
-    string = @node.owner.snippet?._name ? @node.owner.namespace
-    string += '.' + suffix if suffix?
+  // Info string for debugging
+  _info(suffix) {
+    let string = (this.node.owner.snippet != null ? this.node.owner.snippet._name : undefined) != null ? (this.node.owner.snippet != null ? this.node.owner.snippet._name : undefined) : this.node.owner.namespace;
+    if (suffix != null) { return string += `.${suffix}`; }
+  }
 
-  # Create an outlet for a signature definition
-  _outlet: (def, props) ->
-    outlet = Graph.Outlet.make def, props
-    outlet.meta.def = def
-    outlet
+  // Create an outlet for a signature definition
+  _outlet(def, props) {
+    const outlet = Graph.Outlet.make(def, props);
+    outlet.meta.def = def;
+    return outlet;
+  }
 
-  # Make a call to this module in the given program
-  _call: (module, program, depth) ->
-    program.call @node, module, depth
+  // Make a call to this module in the given program
+  _call(module, program, depth) {
+    return program.call(this.node, module, depth);
+  }
 
-  # Require this module's dependencies in the given program
-  _require: (module, program) ->
-    program.require @node, module
+  // Require this module's dependencies in the given program
+  _require(module, program) {
+    return program.require(this.node, module);
+  }
 
-  # Make a call to all connected inputs
-  _inputs: (module, program, depth) ->
-    for arg in module.main.signature
-      outlet = @node.get arg.name
-      Block.previous(outlet)?.call program, depth + 1
+  // Make a call to all connected inputs
+  _inputs(module, program, depth) {
+    return (() => {
+      const result = [];
+      for (let arg of Array.from(module.main.signature)) {
+        const outlet = this.node.get(arg.name);
+        result.push(__guard__(Block.previous(outlet), x => x.call(program, depth + 1)));
+      }
+      return result;
+    })();
+  }
 
-  # Insert callback to this module in the given layout
-  _callback: (module, layout, depth, name, external, outlet) ->
-    layout.callback @node, module, depth, name, external, outlet
+  // Insert callback to this module in the given layout
+  _callback(module, layout, depth, name, external, outlet) {
+    return layout.callback(this.node, module, depth, name, external, outlet);
+  }
 
-  # Include this module in the given layout
-  _include: (module, layout, depth) ->
-    layout.include @node, module, depth
+  // Include this module in the given layout
+  _include(module, layout, depth) {
+    return layout.include(this.node, module, depth);
+  }
 
-  # Link this module's connected callbacks 
-  _link: (module, layout, depth) ->
-    debug && console.log 'block::_link', @.toString(), module.namespace
-    for key in module.symbols
-      ext = module.externals[key]
-      outlet = @node.get ext.name
-      throw new OutletError("External not found on #{@_info ext.name}") if !outlet
+  // Link this module's connected callbacks 
+  _link(module, layout, depth) {
+    debug && console.log('block::_link', this.toString(), module.namespace);
+    return (() => {
+      const result = [];
+      for (let key of Array.from(module.symbols)) {
+        const ext = module.externals[key];
+        let outlet = this.node.get(ext.name);
+        if (!outlet) { throw new OutletError(`External not found on ${this._info(ext.name)}`); }
 
-      continue if outlet.meta.child?
+        if (outlet.meta.child != null) { continue; }
 
-      [orig, parent, block] = [outlet, outlet, null]
-      while !block and parent
-        [parent, outlet] = [outlet.meta.parent, parent]
+        let [orig, parent, block] = Array.from([outlet, outlet, null]);
+        while (!block && parent) {
+          [parent, outlet] = Array.from([outlet.meta.parent, parent]);
+        }
 
-      block  = Block.previous outlet
-      throw new OutletError("Missing connection on #{@_info ext.name}") if !block
+        block  = Block.previous(outlet);
+        if (!block) { throw new OutletError(`Missing connection on ${this._info(ext.name)}`); }
 
-      debug && console.log 'callback -> ', @.toString(), ext.name, outlet
-      block.callback layout, depth + 1, key, ext, outlet.input
-      block?.export layout, depth + 1
+        debug && console.log('callback -> ', this.toString(), ext.name, outlet);
+        block.callback(layout, depth + 1, key, ext, outlet.input);
+        result.push((block != null ? block.export(layout, depth + 1) : undefined));
+      }
+      return result;
+    })();
+  }
 
-  # Trace backwards to discover callbacks further up
-  _trace: (module, layout, depth) ->
-    debug && console.log 'block::_trace', @.toString(), module.namespace
-    for arg in module.main.signature
-      outlet = @node.get arg.name
-      Block.previous(outlet)?.export layout, depth + 1
+  // Trace backwards to discover callbacks further up
+  _trace(module, layout, depth) {
+    debug && console.log('block::_trace', this.toString(), module.namespace);
+    return (() => {
+      const result = [];
+      for (let arg of Array.from(module.main.signature)) {
+        const outlet = this.node.get(arg.name);
+        result.push(__guard__(Block.previous(outlet), x => x.export(layout, depth + 1)));
+      }
+      return result;
+    })();
+  }
+}
 
-OutletError = (message) ->
-  e = new Error message
-  e.name = 'OutletError'
-  e
+var OutletError = function(message) {
+  const e = new Error(message);
+  e.name = 'OutletError';
+  return e;
+};
 
-OutletError.prototype = new Error
+OutletError.prototype = new Error;
 
-module.exports = Block
+module.exports = Block;
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

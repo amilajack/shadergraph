@@ -1,300 +1,367 @@
-Graph = require '../graph'
-$     = require './constants'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let _;
+const Graph = require('../graph');
+const $     = require('./constants');
 
-###
+/*
  GLSL code generator for compiler and linker stubs
-###
+*/
 
-module.exports = _ =
+module.exports = (_ = {
 
-  # Check if shadow outlet
-  unshadow: (name) ->
-    real = name.replace $.SHADOW_ARG, ''
-    if real != name then real else null
+  // Check if shadow outlet
+  unshadow(name) {
+    const real = name.replace($.SHADOW_ARG, '');
+    if (real !== name) { return real; } else { return null; }
+  },
 
-  # Line joiners
-  lines:      (lines) -> lines.join '\n'
-  list:       (lines) -> lines.join ', '
-  statements: (lines) -> lines.join ';\n'
+  // Line joiners
+  lines(lines) { return lines.join('\n'); },
+  list(lines) { return lines.join(', '); },
+  statements(lines) { return lines.join(';\n'); },
 
-  # Function body
-  body: (entry) ->
-    entry:     entry
-    type:      'void'
-    params:    []
-    signature: []
-    return:    ''
-    vars:      {}
-    calls:     []
-    post:      []
-    chain:     {}
+  // Function body
+  body(entry) {
+    return {
+      entry,
+      type:      'void',
+      params:    [],
+      signature: [],
+      return:    '',
+      vars:      {},
+      calls:     [],
+      post:      [],
+      chain:     {}
+    };
+  },
 
-  # Symbol define
-  define: (a, b) ->
-    "#define #{a} #{b}"
+  // Symbol define
+  define(a, b) {
+    return `#define ${a} ${b}`;
+  },
 
-  # Function define
-  function: (type, entry, params, vars, calls) ->
-    "#{type} #{entry}(#{params}) {\n#{vars}#{calls}}"
+  // Function define
+  function(type, entry, params, vars, calls) {
+    return `${type} ${entry}(${params}) {\n${vars}${calls}}`;
+  },
 
-  # Function invocation
-  invoke: (ret, entry, args) ->
-    ret = if ret then "#{ret} = " else ''
-    args = _.list args
-    "  #{ret}#{entry}(#{args})"
+  // Function invocation
+  invoke(ret, entry, args) {
+    ret = ret ? `${ret} = ` : '';
+    args = _.list(args);
+    return `  ${ret}${entry}(${args})`;
+  },
 
-  # Compare two signatures
-  same: (a, b) ->
-    for A, i in a
-      B = b[i]
-      return false if !B
-      return false if A.type != B.type
-      return false if (A.name == $.RETURN_ARG) != (B.name == $.RETURN_ARG)
-    true
+  // Compare two signatures
+  same(a, b) {
+    for (let i = 0; i < a.length; i++) {
+      const A = a[i];
+      const B = b[i];
+      if (!B) { return false; }
+      if (A.type !== B.type) { return false; }
+      if ((A.name === $.RETURN_ARG) !== (B.name === $.RETURN_ARG)) { return false; }
+    }
+    return true;
+  },
 
-  # Generate call signature for module invocation
-  call: (lookup, dangling, entry, signature, body) ->
-    args      = []
-    ret       = ''
-    rets      = 1
+  // Generate call signature for module invocation
+  call(lookup, dangling, entry, signature, body) {
+    const args      = [];
+    let ret       = '';
+    const rets      = 1;
 
-    for arg in signature
-      name  = arg.name
+    for (let arg of Array.from(signature)) {
+      var id, shadow;
+      const { name }  = arg;
 
-      copy = id = lookup name
-      other = null
-      meta  = null
-      omit  = false
-      inout = arg.inout
+      let copy = (id = lookup(name));
+      let other = null;
+      let meta  = null;
+      let omit  = false;
+      const { inout } = arg;
 
-      isReturn = name == $.RETURN_ARG
+      const isReturn = name === $.RETURN_ARG;
 
-      # Shadowed inout: input side
-      if shadow = arg.meta?.shadowed
-        other = lookup shadow
-        if other
-          body.vars[other] = "  " + arg.param(other)
-          body.calls.push    "  #{other} = #{id}"
+      // Shadowed inout: input side
+      if (shadow = arg.meta != null ? arg.meta.shadowed : undefined) {
+        other = lookup(shadow);
+        if (other) {
+          body.vars[other] = `  ${arg.param(other)}`;
+          body.calls.push(`  ${other} = ${id}`);
 
-          if !dangling shadow
-            arg = arg.split()
-          else
-            meta = shadowed: other
+          if (!dangling(shadow)) {
+            arg = arg.split();
+          } else {
+            meta = {shadowed: other};
+          }
+        }
+      }
 
-      # Shadowed inout: output side
-      if shadow = arg.meta?.shadow
-        other = lookup shadow
-        if other
-          if !dangling shadow
-            arg = arg.split()
-            omit = true
-          else
-            meta = shadow: other
-            continue
+      // Shadowed inout: output side
+      if (shadow = arg.meta != null ? arg.meta.shadow : undefined) {
+        other = lookup(shadow);
+        if (other) {
+          if (!dangling(shadow)) {
+            arg = arg.split();
+            omit = true;
+          } else {
+            meta = {shadow: other};
+            continue;
+          }
+        }
+      }
 
-      if isReturn
-        # Capture return value
-        ret = id
-      else if !omit
-        # Pass all non return, non shadow args in
-        args.push other ? id
+      if (isReturn) {
+        // Capture return value
+        ret = id;
+      } else if (!omit) {
+        // Pass all non return, non shadow args in
+        args.push(other != null ? other : id);
+      }
 
-      # Export argument if unconnected
-      if dangling name
-        op = 'push'
-        if isReturn
-          if body.return == ''
-            op = 'unshift'
-            # Preserve 'return' arg name
-            copy = name
-            body.type     = arg.spec
-            body.return   = "  return #{id}"
-            body.vars[id] = "  " + arg.param(id)
-          else
-            body.vars[id] = "  " + arg.param(id)
-            body.params.push arg.param(id, true)
-        else
-          body.params.push arg.param(id, true)
+      // Export argument if unconnected
+      if (dangling(name)) {
+        let op = 'push';
+        if (isReturn) {
+          if (body.return === '') {
+            op = 'unshift';
+            // Preserve 'return' arg name
+            copy = name;
+            body.type     = arg.spec;
+            body.return   = `  return ${id}`;
+            body.vars[id] = `  ${arg.param(id)}`;
+          } else {
+            body.vars[id] = `  ${arg.param(id)}`;
+            body.params.push(arg.param(id, true));
+          }
+        } else {
+          body.params.push(arg.param(id, true));
+        }
 
-        # Copy argument into new signature
-        arg = arg.copy copy, meta
-        body.signature[op] arg
-      else
-        body.vars[id] = "  " + arg.param(id)
+        // Copy argument into new signature
+        arg = arg.copy(copy, meta);
+        body.signature[op](arg);
+      } else {
+        body.vars[id] = `  ${arg.param(id)}`;
+      }
+    }
 
-    body.calls.push _.invoke ret, entry, args
+    return body.calls.push(_.invoke(ret, entry, args));
+  },
 
-  # Assemble main() function from body and call reference
-  build: (body, calls) ->
-    entry   = body.entry
-    code    = null
+  // Assemble main() function from body and call reference
+  build(body, calls) {
+    const { entry }   = body;
+    let code    = null;
 
-    # Check if we're only calling one snippet with identical signature
-    # and not building void main();
-    if calls && calls.length == 1 && entry != 'main'
-      a = body
-      b = calls[0].module
+    // Check if we're only calling one snippet with identical signature
+    // and not building void main();
+    if (calls && (calls.length === 1) && (entry !== 'main')) {
+      const a = body;
+      const b = calls[0].module;
 
-      if _.same body.signature, b.main.signature
-        code = _.define entry, b.entry
+      if (_.same(body.signature, b.main.signature)) {
+        code = _.define(entry, b.entry);
+      }
+    }
 
-    # Otherwise build function body
-    if !code?
-      vars    = (decl for v, decl of body.vars)
-      calls   = body.calls
-      post    = body.post
-      params  = body.params
-      type    = body.type
-      ret     = body.return
+    // Otherwise build function body
+    if ((code == null)) {
+      let vars    = ((() => {
+        const result = [];
+        for (let v in body.vars) {
+          const decl = body.vars[v];
+          result.push(decl);
+        }
+        return result;
+      })());
+      ({ calls }   = body);
+      const { post }    = body;
+      let { params }  = body;
+      const { type }    = body;
+      const ret     = body.return;
 
-      calls = calls.concat post
-      calls.push ret if ret != ''
-      calls.push ''
+      calls = calls.concat(post);
+      if (ret !== '') { calls.push(ret); }
+      calls.push('');
 
-      if vars.length
-        vars.push ''
-        vars = _.statements(vars) + '\n'
-      else
-        vars = ''
+      if (vars.length) {
+        vars.push('');
+        vars = _.statements(vars) + '\n';
+      } else {
+        vars = '';
+      }
 
-      calls  = _.statements calls
-      params = _.list       params
+      calls  = _.statements(calls);
+      params = _.list(params);
 
-      code   = _.function type, entry, params, vars, calls
+      code   = _.function(type, entry, params, vars, calls);
+    }
 
-    signature: body.signature
-    code:      code
-    name:      entry
+    return {
+      signature: body.signature,
+      code,
+      name:      entry
+    };
+  },
 
-  # Build links to other callbacks
-  links: (links) ->
-    out =
-      defs: []
+  // Build links to other callbacks
+  links(links) {
+    const out = {
+      defs: [],
       bodies: []
+    };
 
-    _.link l, out for l in links
+    for (let l of Array.from(links)) { _.link(l, out); }
 
-    out.defs   = _.lines      out.defs
-    out.bodies = _.statements out.bodies
+    out.defs   = _.lines(out.defs);
+    out.bodies = _.statements(out.bodies);
 
-    delete out.defs   if out.defs   == ''
-    delete out.bodies if out.bodies == ''
+    if (out.defs   === '') { delete out.defs; }
+    if (out.bodies === '') { delete out.bodies; }
 
-    out
+    return out;
+  },
 
-  # Link a module's entry point as a callback
-  link: (link, out) =>
-    {module, name, external} = link
-    main  = module.main
-    entry = module.entry
+  // Link a module's entry point as a callback
+  link: (link, out) => {
+    let list;
+    const {module, name, external} = link;
+    const { main }  = module;
+    const { entry } = module;
 
-    # If signatures match, #define alias for the symbol
-    if _.same main.signature, external.signature
-      return out.defs.push _.define name, entry
+    // If signatures match, #define alias for the symbol
+    if (_.same(main.signature, external.signature)) {
+      return out.defs.push(_.define(name, entry));
+    }
 
-    # Signatures differ, build one-line callback to match defined prototype
+    // Signatures differ, build one-line callback to match defined prototype
 
-    # Map names to names
-    ins  = []
-    outs = []
-    map  = {}
-    returnVar = [module.namespace, $.RETURN_ARG].join ''
+    // Map names to names
+    const ins  = [];
+    const outs = [];
+    let map  = {};
+    const returnVar = [module.namespace, $.RETURN_ARG].join('');
 
-    for arg in external.signature
-      list = if arg.inout == Graph.IN then ins else outs
-      list.push arg
+    for (var arg of Array.from(external.signature)) {
+      list = arg.inout === Graph.IN ? ins : outs;
+      list.push(arg);
+    }
 
-    for arg in main.signature
+    for (arg of Array.from(main.signature)) {
 
-      list = if arg.inout == Graph.IN then ins else outs
-      other = list.shift()
-      _name = other.name
+      list = arg.inout === Graph.IN ? ins : outs;
+      const other = list.shift();
+      let _name = other.name;
 
-      # Avoid 'return' keyword
-      if _name == $.RETURN_ARG
-        _name = returnVar
+      // Avoid 'return' keyword
+      if (_name === $.RETURN_ARG) {
+        _name = returnVar;
+      }
 
-      map[arg.name] = _name
+      map[arg.name] = _name;
+    }
 
-    # Build function prototype to invoke the other side
-    _lookup = (name) -> map[name]
-    _dangling = () -> true
+    // Build function prototype to invoke the other side
+    let _lookup = name => map[name];
+    const _dangling = () => true;
 
-    inner   = _.body()
-    _.call _lookup, _dangling, entry, main.signature, inner
-    inner.entry = entry
+    const inner   = _.body();
+    _.call(_lookup, _dangling, entry, main.signature, inner);
+    inner.entry = entry;
 
-    # Avoid 'return' keyword
+    // Avoid 'return' keyword
     map =
-      return: returnVar
-    _lookup = (name) -> map[name] ? name
+      {return: returnVar};
+    _lookup = name => map[name] != null ? map[name] : name;
 
-    # Build wrapper function for the calling side
-    outer   = _.body()
-    wrapper = _.call _lookup, _dangling, entry, external.signature, outer
-    outer.calls = inner.calls
-    outer.entry = name
+    // Build wrapper function for the calling side
+    const outer   = _.body();
+    const wrapper = _.call(_lookup, _dangling, entry, external.signature, outer);
+    outer.calls = inner.calls;
+    outer.entry = name;
 
-    out.bodies.push _.build(inner).code.split(' {')[0]
-    out.bodies.push _.build(outer).code
+    out.bodies.push(_.build(inner).code.split(' {')[0]);
+    return out.bodies.push(_.build(outer).code);
+  },
 
-  # Remove all function prototypes to avoid redefinition errors
-  defuse: (code) ->
-    # Don't try this at home kids
-    re = /([A-Za-z0-9_]+\s+)?[A-Za-z0-9_]+\s+[A-Za-z0-9_]+\s*\([^)]*\)\s*;\s*/mg
-    strip = (code) -> code.replace re, (m) -> ''
+  // Remove all function prototypes to avoid redefinition errors
+  defuse(code) {
+    // Don't try this at home kids
+    const re = /([A-Za-z0-9_]+\s+)?[A-Za-z0-9_]+\s+[A-Za-z0-9_]+\s*\([^)]*\)\s*;\s*/mg;
+    const strip = code => code.replace(re, m => '');
 
-    # Split into scopes by braces
-    blocks = code.split /(?=[{}])/g
-    level  = 0
-    for b, i in blocks
-      switch b[0]
-        when '{' then level++
-        when '}' then level--
+    // Split into scopes by braces
+    const blocks = code.split(/(?=[{}])/g);
+    let level  = 0;
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i];
+      switch (b[0]) {
+        case '{': level++; break;
+        case '}': level--; break;
+      }
 
-      # Only mess with top level scope
-      if level == 0
-        # Preprocessor lines will fuck us up. Split on them.
-        hash = b.split /^[ \t]*#/m
-        for line, j in hash
+      // Only mess with top level scope
+      if (level === 0) {
+        // Preprocessor lines will fuck us up. Split on them.
+        const hash = b.split(/^[ \t]*#/m);
+        for (let j = 0; j < hash.length; j++) {
 
-          if j > 0
-            # Trim off preprocessor directive
-            line = line.split /\n/
-            head = line.shift()
-            rest = line.join "\n"
+          let line = hash[j];
+          if (j > 0) {
+            // Trim off preprocessor directive
+            line = line.split(/\n/);
+            const head = line.shift();
+            const rest = line.join("\n");
 
-            # Process rest
-            hash[j] = [head, strip rest].join '\n'
-          else
-            # Process entire line
-            hash[j] = strip line
+            // Process rest
+            hash[j] = [head, strip(rest)].join('\n');
+          } else {
+            // Process entire line
+            hash[j] = strip(line);
+          }
+        }
 
-        # Reassemble
-        blocks[i] = hash.join '#'
+        // Reassemble
+        blocks[i] = hash.join('#');
+      }
+    }
 
-    code = blocks.join ''
+    return code = blocks.join('');
+  },
 
-  # Remove duplicate uniforms / varyings / attributes
-  dedupe: (code) ->
-    map = {}
-    re  = /((attribute|uniform|varying)\s+)[A-Za-z0-9_]+\s+([A-Za-z0-9_]+)\s*(\[[^\]]*\]\s*)?;\s*/mg
-    code.replace re, (m, qual, type, name, struct) ->
-      return '' if map[name]
-      map[name] = true
-      return m
+  // Remove duplicate uniforms / varyings / attributes
+  dedupe(code) {
+    const map = {};
+    const re  = /((attribute|uniform|varying)\s+)[A-Za-z0-9_]+\s+([A-Za-z0-9_]+)\s*(\[[^\]]*\]\s*)?;\s*/mg;
+    return code.replace(re, function(m, qual, type, name, struct) {
+      if (map[name]) { return ''; }
+      map[name] = true;
+      return m;
+    });
+  },
 
-  # Move definitions to top so they compile properly
-  hoist: (code) ->
+  // Move definitions to top so they compile properly
+  hoist(code) {
 
-    # Hoist symbol defines to the top so (re)definitions use the right alias
-    re = /^#define ([^ ]+ _pg_[0-9]+_|_pg_[0-9]+_ [^ ]+)$/
+    // Hoist symbol defines to the top so (re)definitions use the right alias
+    const re = /^#define ([^ ]+ _pg_[0-9]+_|_pg_[0-9]+_ [^ ]+)$/;
 
-    lines = code.split /\n/g
-    defs = []
-    out = []
-    for line in lines
-      list = if line.match re then defs else out
-      list.push line
+    const lines = code.split(/\n/g);
+    const defs = [];
+    const out = [];
+    for (let line of Array.from(lines)) {
+      const list = line.match(re) ? defs : out;
+      list.push(line);
+    }
 
-    defs.concat(out).join "\n"
+    return defs.concat(out).join("\n");
+  }
+});

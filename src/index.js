@@ -1,57 +1,75 @@
-Block     = require './block'
-Factory   = require './factory'
-GLSL      = require './glsl'
-Graph     = require './graph'
-Linker    = require './linker'
-Visualize = require './visualize'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const Block     = require('./block');
+const Factory   = require('./factory');
+const GLSL      = require('./glsl');
+const Graph     = require('./graph');
+const Linker    = require('./linker');
+const Visualize = require('./visualize');
 
-library   = Factory.library
-cache     = Factory.cache
-visualize = Visualize.visualize
-inspect   = Visualize.inspect
+const { library }   = Factory;
+const { cache }     = Factory;
+const { visualize } = Visualize;
+const { inspect }   = Visualize;
 
-Snippet   = Linker.Snippet
+const { Snippet }   = Linker;
 
-merge = (a, b = {}) ->
-  out = {}
-  out[key] = b[key] ? a[key] for key, value of a
-  out
+const merge = function(a, b) {
+  if (b == null) { b = {}; }
+  const out = {};
+  for (let key in a) { const value = a[key]; out[key] = b[key] != null ? b[key] : a[key]; }
+  return out;
+};
 
-class ShaderGraph
-  constructor: (snippets, config) ->
-    return new ShaderGraph snippets, config if @ !instanceof ShaderGraph
+class ShaderGraph {
+  static initClass() {
+  
+    // Expose class hierarchy
+    this.Block =     Block;
+    this.Factory =   Factory;
+    this.GLSL =      GLSL;
+    this.Graph =     Graph;
+    this.Linker =    Linker;
+    this.Visualize = Visualize;
+  }
+  constructor(snippets, config) {
+    if (!(this instanceof ShaderGraph)) { return new ShaderGraph(snippets, config); }
 
-    defaults =
-      globalUniforms:   false
-      globalVaryings:   true
-      globalAttributes: true
-      globals:          []
+    const defaults = {
+      globalUniforms:   false,
+      globalVaryings:   true,
+      globalAttributes: true,
+      globals:          [],
       autoInspect:      false
+    };
 
-    @config = merge defaults, config
-    @fetch  = cache library GLSL, snippets, Snippet.load
+    this.config = merge(defaults, config);
+    this.fetch  = cache(library(GLSL, snippets, Snippet.load));
+  }
 
-  shader: (config = {}) ->
-    _config = merge @config, config
-    new Factory.Factory GLSL, @fetch, _config
+  shader(config) {
+    if (config == null) { config = {}; }
+    const _config = merge(this.config, config);
+    return new Factory.Factory(GLSL, this.fetch, _config);
+  }
 
-  material: (config) ->
-    new Factory.Material @shader(config), @shader(config)
+  material(config) {
+    return new Factory.Material(this.shader(config), this.shader(config));
+  }
 
-  overlay:   (shader) -> ShaderGraph.overlay   shader
-  visualize: (shader) -> ShaderGraph.visualize shader
+  overlay(shader) { return ShaderGraph.overlay(shader); }
+  visualize(shader) { return ShaderGraph.visualize(shader); }
 
-  # Expose class hierarchy
-  @Block:     Block
-  @Factory:   Factory
-  @GLSL:      GLSL
-  @Graph:     Graph
-  @Linker:    Linker
-  @Visualize: Visualize
+  // Static visualization method
+  static inspect(shader) { return inspect(shader); }
+  static visualize(shader) { return visualize(shader); }
+}
+ShaderGraph.initClass();
 
-  # Static visualization method
-  @inspect   = (shader) -> inspect shader
-  @visualize = (shader) -> visualize shader
-
-module.exports = ShaderGraph
-window.ShaderGraph = ShaderGraph if typeof window != 'undefined'
+module.exports = ShaderGraph;
+if (typeof window !== 'undefined') { window.ShaderGraph = ShaderGraph; }

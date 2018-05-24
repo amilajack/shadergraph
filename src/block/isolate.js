@@ -1,67 +1,94 @@
-Graph   = require '../graph'
-Block   = require './block'
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const Graph   = require('../graph');
+const Block   = require('./block');
 
-###
+/*
   Isolate a subgraph as a single node
-###
-class Isolate extends Block
-  constructor: (@graph) ->
-    super
+*/
+class Isolate extends Block {
+  constructor(graph) {
+    {
+      // Hack: trick Babel/TypeScript into allowing this before super.
+      if (false) { super(); }
+      let thisFn = (() => { return this; }).toString();
+      let thisName = thisFn.slice(thisFn.indexOf('return') + 6 + 1, thisFn.indexOf(';')).trim();
+      eval(`${thisName} = this;`);
+    }
+    this.graph = graph;
+    super(...arguments);
+  }
 
-  refresh: () ->
-    super
-    delete @subroutine
+  refresh() {
+    super.refresh(...arguments);
+    return delete this.subroutine;
+  }
 
-  clone: () ->
-    new Isolate @graph
+  clone() {
+    return new Isolate(this.graph);
+  }
 
-  makeOutlets: () ->
-    @make()
+  makeOutlets() {
+    this.make();
 
-    outlets = []
+    const outlets = [];
 
-    seen = {}
-    done = {}
-    for set in ['inputs', 'outputs']
-      for outlet in @graph[set]()
-        # Preserve name of 'return' and 'callback' outlets
-        name = undefined
-        name = outlet.hint if outlet.hint in ['return', 'callback'] and
-                              outlet.inout == Graph.OUT
+    const seen = {};
+    const done = {};
+    for (let set of ['inputs', 'outputs']) {
+      for (let outlet of Array.from(this.graph[set]())) {
+        // Preserve name of 'return' and 'callback' outlets
+        let name = undefined;
+        if (['return', 'callback'].includes(outlet.hint) &&
+                              (outlet.inout === Graph.OUT)) { name = outlet.hint; }
 
-        # Unless it already exists
-        name = undefined  if seen[name]?
+        // Unless it already exists
+        if (seen[name] != null) { name = undefined; }
 
-        # Dupe outlet and remember link to original
-        dupe = outlet.dupe name
-        dupe  .meta.child ?= outlet
-        outlet.meta.parent = dupe
-        seen[name] = true if name?
-        done[outlet.name] = dupe
+        // Dupe outlet and remember link to original
+        const dupe = outlet.dupe(name);
+        if (dupe  .meta.child == null) { dupe.meta.child = outlet; }
+        outlet.meta.parent = dupe;
+        if (name != null) { seen[name] = true; }
+        done[outlet.name] = dupe;
 
-        outlets.push dupe
+        outlets.push(dupe);
+      }
+    }
 
-    outlets
+    return outlets;
+  }
 
-  make: () ->
-    @subroutine = @graph.compile @namespace
+  make() {
+    return this.subroutine = this.graph.compile(this.namespace);
+  }
 
-  call: (program, depth) ->
-    @_call   @subroutine, program, depth
-    @_inputs @subroutine, program, depth
+  call(program, depth) {
+    this._call(this.subroutine, program, depth);
+    return this._inputs(this.subroutine, program, depth);
+  }
 
-  export: (layout, depth) ->
-    return unless layout.visit @namespace, depth
+  export(layout, depth) {
+    if (!layout.visit(this.namespace, depth)) { return; }
 
-    # Link up with normal inputs
-    @_link   @subroutine, layout, depth
-    @_trace  @subroutine, layout, depth
+    // Link up with normal inputs
+    this._link(this.subroutine, layout, depth);
+    this._trace(this.subroutine, layout, depth);
 
-    # Export callbacks needed to call the subroutine
-    @graph.export layout, depth
+    // Export callbacks needed to call the subroutine
+    return this.graph.export(layout, depth);
+  }
 
-  callback: (layout, depth, name, external, outlet) ->
-    outlet = outlet.meta.child
-    outlet.node.owner.callback layout, depth, name, external, outlet
+  callback(layout, depth, name, external, outlet) {
+    outlet = outlet.meta.child;
+    return outlet.node.owner.callback(layout, depth, name, external, outlet);
+  }
+}
 
-module.exports = Isolate
+module.exports = Isolate;

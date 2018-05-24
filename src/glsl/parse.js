@@ -1,205 +1,264 @@
-tokenizer = require '../../vendor/glsl-tokenizer'
-parser    = require '../../vendor/glsl-parser'
-decl      = require './decl'
-$         = require './constants'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS201: Simplify complex destructure assignments
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const tokenizer = require('../../vendor/glsl-tokenizer');
+const parser    = require('../../vendor/glsl-parser');
+const decl      = require('./decl');
+const $         = require('./constants');
 
-debug = false
+let debug = false;
 
-###
+/*
 parse GLSL into AST
 extract all global symbols and make type signatures
-###
-# Parse a GLSL snippet
-parse = (name, code) ->
-  ast        = parseGLSL name, code
-  program    = processAST ast, code
+*/
+// Parse a GLSL snippet
+const parse = function(name, code) {
+  let program;
+  const ast        = parseGLSL(name, code);
+  return program    = processAST(ast, code);
+};
 
-# Parse GLSL language into AST
-parseGLSL = (name, code) ->
+// Parse GLSL language into AST
+var parseGLSL = function(name, code) {
 
-  tock = tick() if debug
+  let ast, errors, tock;
+  if (debug) { tock = tick(); }
 
-  # Sync stream hack (see /vendor/through)
-  try
-    [[ast], errors] = tokenizer().process parser(), code
-  catch e
-    errors = [{message:e}]
+  // Sync stream hack (see /vendor/through)
+  try {
+    let array;
+    array = tokenizer().process(parser(), code), [ast] = Array.from(array[0]), errors = array[1];
+  } catch (e) {
+    errors = [{message:e}];
+  }
 
-  tock 'GLSL Tokenize & Parse' if debug
+  if (debug) { tock('GLSL Tokenize & Parse'); }
 
-  fmt = (code) ->
-    code = code.split "\n"
-    max  = ("" + code.length).length
-    pad  = (v) -> if (v = "" + v).length < max then ("       " + v).slice -max else v
-    code.map((line, i) -> "#{pad i + 1}: #{line}").join "\n"
+  const fmt = function(code) {
+    code = code.split("\n");
+    const max  = (`${code.length}`).length;
+    const pad  = function(v) { if ((v = `${v}`).length < max) { return (`       ${v}`).slice(-max); } else { return v; } };
+    return code.map((line, i) => `${pad(i + 1)}: ${line}`).join("\n");
+  };
 
-  if !ast || errors.length
-    name = '(inline code)' if !name
-    console.warn fmt code
-    console.error "#{name} -", error.message for error in errors
-    throw new Error "GLSL parse error"
+  if (!ast || errors.length) {
+    if (!name) { name = '(inline code)'; }
+    console.warn(fmt(code));
+    for (let error of Array.from(errors)) { console.error(`${name} -`, error.message); }
+    throw new Error("GLSL parse error");
+  }
 
-  ast
+  return ast;
+};
 
-# Process AST for compilation
-processAST = (ast, code) ->
-  tock = tick() if debug
+// Process AST for compilation
+var processAST = function(ast, code) {
+  let tock;
+  if (debug) { tock = tick(); }
 
-  # Walk AST tree and collect global declarations
-  symbols = []
-  walk mapSymbols, collect(symbols), ast, ''
+  // Walk AST tree and collect global declarations
+  const symbols = [];
+  walk(mapSymbols, collect(symbols), ast, '');
 
-  # Sort symbols into bins
-  [main, internals, externals] = sortSymbols symbols
+  // Sort symbols into bins
+  const [main, internals, externals] = Array.from(sortSymbols(symbols));
 
-  # Extract storage/type signatures of symbols
-  signatures = extractSignatures main, internals, externals
+  // Extract storage/type signatures of symbols
+  const signatures = extractSignatures(main, internals, externals);
 
-  tock 'GLSL AST' if debug
+  if (debug) { tock('GLSL AST'); }
 
-  {ast, code, signatures}
+  return {ast, code, signatures};
+};
 
-# Extract functions and external symbols from AST
-mapSymbols = (node, collect) ->
-  switch node.type
-    when 'decl'
-      collect decl.node(node)
-      return false
-  return true
+// Extract functions and external symbols from AST
+var mapSymbols = function(node, collect) {
+  switch (node.type) {
+    case 'decl':
+      collect(decl.node(node));
+      return false;
+      break;
+  }
+  return true;
+};
 
-collect = (out) ->
-  (value) -> out.push obj for obj in value if value?
+var collect = out => function(value) { if (value != null) { return Array.from(value).map((obj) => out.push(obj)); } };
 
-# Identify internals, externals and main function
-sortSymbols = (symbols) ->
-  main = null
-  internals = []
-  externals = []
-  maybe = {}
-  found = false
+// Identify internals, externals and main function
+var sortSymbols = function(symbols) {
+  let main = null;
+  const internals = [];
+  let externals = [];
+  const maybe = {};
+  let found = false;
 
-  for s in symbols
-    if !s.body
-      # Unmarked globals are definitely internal
-      if s.storage == 'global'
-        internals.push s
+  for (var s of Array.from(symbols)) {
+    if (!s.body) {
+      // Unmarked globals are definitely internal
+      if (s.storage === 'global') {
+        internals.push(s);
 
-      # Possible external
-      else
-        externals.push s
-        maybe[s.ident] = true
-    else
-      # Remove earlier forward declaration
-      if maybe[s.ident]
-        externals = (e for e in externals when e.ident != s.ident)
-        delete maybe[s.ident]
+      // Possible external
+      } else {
+        externals.push(s);
+        maybe[s.ident] = true;
+      }
+    } else {
+      // Remove earlier forward declaration
+      if (maybe[s.ident]) {
+        externals = (Array.from(externals).filter((e) => e.ident !== s.ident));
+        delete maybe[s.ident];
+      }
 
-      # Internal function
-      internals.push s
+      // Internal function
+      internals.push(s);
 
-      # Last function is main
-      # unless there is a function called 'main'
-      if s.ident == 'main'
-        main = s
-        found = true
-      else if !found
-        main = s
+      // Last function is main
+      // unless there is a function called 'main'
+      if (s.ident === 'main') {
+        main = s;
+        found = true;
+      } else if (!found) {
+        main = s;
+      }
+    }
+  }
 
-  [main, internals, externals]
+  return [main, internals, externals];
+};
 
-# Generate type signatures and appropriate ins/outs
-extractSignatures = (main, internals, externals) ->
-  sigs =
-    uniform:   []
-    attribute: []
-    varying:   []
-    external:  []
-    internal:  []
-    global:    []
+// Generate type signatures and appropriate ins/outs
+var extractSignatures = function(main, internals, externals) {
+  const sigs = {
+    uniform:   [],
+    attribute: [],
+    varying:   [],
+    external:  [],
+    internal:  [],
+    global:    [],
     main:      null
+  };
 
-  defn = (symbol) ->
-    decl.type symbol.ident, symbol.type, symbol.quant, symbol.count, symbol.inout, symbol.storage
+  const defn = symbol => decl.type(symbol.ident, symbol.type, symbol.quant, symbol.count, symbol.inout, symbol.storage);
 
-  func = (symbol, inout) ->
-    signature = (defn arg for arg in symbol.args)
+  const func = function(symbol, inout) {
+    let def;
+    let d;
+    const signature = (Array.from(symbol.args).map((arg) => defn(arg)));
 
-    # Split inouts into in and out
-    for d in signature when d.inout == decl.inout
-      a = d
-      b = d.copy()
+    // Split inouts into in and out
+    for (d of Array.from(signature)) {
+      if (d.inout === decl.inout) {
+        const a = d;
+        const b = d.copy();
 
-      a.inout  = decl.in
-      b.inout  = decl.out
-      b.meta   = shadow: a.name
-      b.name  += $.SHADOW_ARG
-      a.meta   = shadowed: b.name
+        a.inout  = decl.in;
+        b.inout  = decl.out;
+        b.meta   = {shadow: a.name};
+        b.name  += $.SHADOW_ARG;
+        a.meta   = {shadowed: b.name};
 
-      signature.push b
+        signature.push(b);
+      }
+    }
 
-    # Add output for return type
-    if symbol.type != 'void'
-      signature.unshift decl.type $.RETURN_ARG, symbol.type, false, '', 'out'
+    // Add output for return type
+    if (symbol.type !== 'void') {
+      signature.unshift(decl.type($.RETURN_ARG, symbol.type, false, '', 'out'));
+    }
 
-    # Make type string
-    inTypes  = (d.type for d in signature when d.inout == decl.in ).join ','
-    outTypes = (d.type for d in signature when d.inout == decl.out).join ','
-    type     = "(#{inTypes})(#{outTypes})"
+    // Make type string
+    const inTypes  = ((() => {
+      const result = [];
+      for (d of Array.from(signature)) {         if (d.inout === decl.in) {
+          result.push(d.type);
+        }
+      } 
+      return result;
+    })()).join(',');
+    const outTypes = ((() => {
+      const result1 = [];
+      for (d of Array.from(signature)) {         if (d.inout === decl.out) {
+          result1.push(d.type);
+        }
+      }
+      return result1;
+    })()).join(',');
+    const type     = `(${inTypes})(${outTypes})`;
 
-    def =
-      name: symbol.ident
-      type: type
-      signature: signature
-      inout: inout
+    return def = {
+      name: symbol.ident,
+      type,
+      signature,
+      inout,
       spec: symbol.type
+    };
+  };
 
-  # Main
-  sigs.main = func main, decl.out
+  // Main
+  sigs.main = func(main, decl.out);
 
-  # Internals (for name replacement only)
-  for symbol in internals
-    sigs.internal.push
-      name: symbol.ident
+  // Internals (for name replacement only)
+  for (var symbol of Array.from(internals)) {
+    sigs.internal.push({
+      name: symbol.ident});
+  }
 
-  # Externals
-  for symbol in externals
-    switch symbol.decl
+  // Externals
+  for (symbol of Array.from(externals)) {
+    switch (symbol.decl) {
 
-      # Uniforms/attributes/varyings
-      when 'external'
-        def = defn symbol
-        sigs[symbol.storage].push def
+      // Uniforms/attributes/varyings
+      case 'external':
+        var def = defn(symbol);
+        sigs[symbol.storage].push(def);
+        break;
 
-      # Callbacks
-      when 'function'
-        def = func symbol, decl.in
-        sigs.external.push def
+      // Callbacks
+      case 'function':
+        def = func(symbol, decl.in);
+        sigs.external.push(def);
+        break;
+    }
+  }
 
-  sigs
+  return sigs;
+};
 
-# Walk AST, apply map and collect values
-debug = false
+// Walk AST, apply map and collect values
+debug = false;
 
-walk = (map, collect, node, indent) ->
-  debug && console.log indent, node.type, node.token?.data, node.token?.type
+var walk = function(map, collect, node, indent) {
+  debug && console.log(indent, node.type, node.token != null ? node.token.data : undefined, node.token != null ? node.token.type : undefined);
 
-  recurse = map node, collect
+  const recurse = map(node, collect);
 
-  if recurse
-    walk map, collect, child, indent + '  ', debug for child, i in node.children
+  if (recurse) {
+    for (let i = 0; i < node.children.length; i++) { const child = node.children[i]; walk(map, collect, child, indent + '  ', debug); }
+  }
 
-  null
+  return null;
+};
 
-# #####
+// #####
 
-tick = () ->
-  now = +new Date
-  return (label) ->
-    delta = +new Date() - now
-    console.log label, delta + " ms"
-    delta
+var tick = function() {
+  const now = +new Date;
+  return function(label) {
+    const delta = +new Date() - now;
+    console.log(label, delta + " ms");
+    return delta;
+  };
+};
 
 
-module.exports = walk
-module.exports = parse
+module.exports = walk;
+module.exports = parse;
 

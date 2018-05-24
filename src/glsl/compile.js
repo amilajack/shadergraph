@@ -1,66 +1,100 @@
-###
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+/*
   Compile snippet back into GLSL, but with certain symbols replaced by prefixes / placeholders
-###
+*/
 
-compile = (program) ->
-  {ast, code, signatures} = program
+const compile = function(program) {
+  const {ast, code, signatures} = program;
 
-  # Prepare list of placeholders
-  placeholders = replaced signatures
+  // Prepare list of placeholders
+  const placeholders = replaced(signatures);
 
-  # Compile
-  assembler = string_compiler code, placeholders
+  // Compile
+  const assembler = string_compiler(code, placeholders);
 
-  [signatures, assembler]
+  return [signatures, assembler];
+};
 
-# #####
+// #####
 
-tick = () ->
-  now = +new Date
-  return (label) ->
-    delta = +new Date() - now
-    console.log label, delta + " ms"
-    delta
+const tick = function() {
+  const now = +new Date;
+  return function(label) {
+    const delta = +new Date() - now;
+    console.log(label, delta + " ms");
+    return delta;
+  };
+};
 
-replaced = (signatures) ->
-  out = {}
-  s = (sig) -> out[sig.name] = true
+var replaced = function(signatures) {
+  const out = {};
+  const s = sig => out[sig.name] = true;
 
-  s signatures.main
+  s(signatures.main);
 
-  # Prefix all global symbols
-  for key in ['external', 'internal', 'varying', 'uniform', 'attribute']
-    s(sig) for sig in signatures[key]
+  // Prefix all global symbols
+  for (let key of ['external', 'internal', 'varying', 'uniform', 'attribute']) {
+    for (let sig of Array.from(signatures[key])) { s(sig); }
+  }
 
-  out
+  return out;
+};
 
-###
+/*
 String-replacement based compiler
-###
-string_compiler = (code, placeholders) ->
+*/
+var string_compiler = function(code, placeholders) {
 
-  # Make regexp for finding placeholders
-  # Replace on word boundaries
-  re = new RegExp '\\b(' + (key for key of placeholders).join('|') + ')\\b', 'g'
+  // Make regexp for finding placeholders
+  // Replace on word boundaries
+  let key;
+  const re = new RegExp('\\b(' + ((() => {
+    const result = [];
+    for (key in placeholders) {
+      result.push(key);
+    }
+    return result;
+  })()).join('|') + ')\\b', 'g');
 
-  # Strip comments
-  code = code.replace /\/\/[^\n]*/g, ''
-  code = code.replace /\/\*([^*]|\*[^\/])*\*\//g, ''
+  // Strip comments
+  code = code.replace(/\/\/[^\n]*/g, '');
+  code = code.replace(/\/\*([^*]|\*[^\/])*\*\//g, '');
 
-  # Strip all preprocessor commands (lazy)
-  #code = code.replace /^#[^\n]*/mg, ''
+  // Strip all preprocessor commands (lazy)
+  //code = code.replace /^#[^\n]*/mg, ''
 
-  # Assembler function that takes namespace prefix and exceptions
-  # and returns GLSL source code
-  (prefix = '', exceptions = {}, defines = {}) ->
-    replace = {}
-    for key of placeholders
-      replace[key] = if exceptions[key]? then key else prefix + key
+  // Assembler function that takes namespace prefix and exceptions
+  // and returns GLSL source code
+  return function(prefix, exceptions, defines) {
+    let key;
+    if (prefix == null) { prefix = ''; }
+    if (exceptions == null) { exceptions = {}; }
+    if (defines == null) { defines = {}; }
+    const replace = {};
+    for (key in placeholders) {
+      replace[key] = (exceptions[key] != null) ? key : prefix + key;
+    }
 
-    compiled = code.replace re, (key) -> replace[key]
+    const compiled = code.replace(re, key => replace[key]);
 
-    defs = ("#define #{key} #{value}" for key, value of defines)
-    defs.push '' if defs.length
-    defs.join("\n") + compiled
+    const defs = ((() => {
+      const result1 = [];
+      for (key in defines) {
+        const value = defines[key];
+        result1.push(`#define ${key} ${value}`);
+      }
+      return result1;
+    })());
+    if (defs.length) { defs.push(''); }
+    return defs.join("\n") + compiled;
+  };
+};
 
-module.exports = compile
+module.exports = compile;

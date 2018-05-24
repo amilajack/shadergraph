@@ -1,62 +1,85 @@
-###
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+/*
   Graph of nodes with outlets
-###
-class Graph
-  @index: 0
-  @id: (name) -> ++Graph.index
+*/
+class Graph {
+  static initClass() {
+    this.index = 0;
+  
+    this.IN = 0;
+    this.OUT = 1;
+  }
+  static id(name) { return ++Graph.index; }
 
-  @IN: 0
-  @OUT: 1
+  constructor(nodes, parent = null) {
+    this.parent = parent;
+    this.id    = Graph.id();
+    this.nodes = [];
+    nodes && this.add(nodes);
+  }
 
-  constructor: (nodes, @parent = null) ->
-    @id    = Graph.id()
-    @nodes = []
-    nodes && @add nodes
+  inputs() {
+    const inputs = [];
+    for (let node of Array.from(this.nodes)) {
+      for (let outlet of Array.from(node.inputs)) { if (outlet.input === null) { inputs.push(outlet); } }
+    }
+    return inputs;
+  }
 
-  inputs: () ->
-    inputs = []
-    for node in @nodes
-      inputs.push(outlet) for outlet in node.inputs when outlet.input == null
-    return inputs
+  outputs() {
+    const outputs = [];
+    for (let node of Array.from(this.nodes)) {
+      for (let outlet of Array.from(node.outputs)) { if (outlet.output.length === 0) { outputs.push(outlet); } }
+    }
+    return outputs;
+  }
 
-  outputs: () ->
-    outputs = []
-    for node in @nodes
-      outputs.push(outlet) for outlet in node.outputs when outlet.output.length == 0
-    return outputs
+  getIn(name) { return (Array.from(this.inputs()).filter((outlet) => outlet.name === name))[0]; }
+  getOut(name) { return (Array.from(this.outputs()).filter((outlet) => outlet.name === name))[0]; }
 
-  getIn:  (name) -> (outlet for outlet in @inputs()  when outlet.name == name)[0]
-  getOut: (name) -> (outlet for outlet in @outputs() when outlet.name == name)[0]
+  add(node, ignore) {
 
-  add: (node, ignore) ->
+    if (node.length) {
+      for (let _node of Array.from(node)) { this.add(_node); }
+      return;
+    }
 
-    if node.length
-      @add(_node) for _node in node
-      return
+    if (node.graph && !ignore) { throw new Error("Adding node to two graphs at once"); }
 
-    throw new Error "Adding node to two graphs at once" if node.graph and !ignore
+    node.graph = this;
+    return this.nodes.push(node);
+  }
 
-    node.graph = @
-    @nodes.push node
+  remove(node, ignore) {
+    if (node.length) {
+      for (let _node of Array.from(node)) { this.remove(_node); }
+      return;
+    }
 
-  remove: (node, ignore) ->
-    if node.length
-      @remove(_node) for _node in node
-      return
+    if (node.graph !== this) { throw new Error("Removing node from wrong graph."); }
 
-    throw new Error "Removing node from wrong graph." if node.graph != @
+    ignore || node.disconnect();
 
-    ignore || node.disconnect()
+    this.nodes.splice(this.nodes.indexOf(node), 1);
+    return node.graph = null;
+  }
 
-    @nodes.splice @nodes.indexOf(node), 1
-    node.graph = null
+  adopt(node) {
+    if (node.length) {
+      for (let _node of Array.from(node)) { this.adopt(_node); }
+      return;
+    }
 
-  adopt: (node) ->
-    if node.length
-      @adopt(_node) for _node in node
-      return
+    node.graph.remove(node, true);
+    return this.add(node, true);
+  }
+}
+Graph.initClass();
 
-    node.graph.remove node, true
-    @.add node, true
-
-module.exports = Graph
+module.exports = Graph;

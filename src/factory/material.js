@@ -1,46 +1,62 @@
-debug = false
-Visualize = require '../visualize'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const debug = false;
+const Visualize = require('../visualize');
 
-tick = () ->
-  now = +new Date
-  return (label) ->
-    delta = +new Date() - now
-    console.log label, delta + " ms"
-    delta
+const tick = function() {
+  const now = +new Date;
+  return function(label) {
+    const delta = +new Date() - now;
+    console.log(label, delta + " ms");
+    return delta;
+  };
+};
 
-class Material
-  constructor: (@vertex, @fragment) ->
-    @tock = tick() if debug
+class Material {
+  constructor(vertex, fragment) {
+    this.vertex = vertex;
+    this.fragment = fragment;
+    if (debug) { this.tock = tick(); }
+  }
 
-  build: (options) -> @link options
-  link: (options = {}) ->
-    uniforms   = {}
-    varyings   = {}
-    attributes = {}
+  build(options) { return this.link(options); }
+  link(options) {
+    if (options == null) { options = {}; }
+    const uniforms   = {};
+    const varyings   = {};
+    const attributes = {};
 
-    vertex   = @vertex  .link 'main'
-    fragment = @fragment.link 'main'
+    const vertex   = this.vertex  .link('main');
+    const fragment = this.fragment.link('main');
 
-    for shader in [vertex, fragment]
-      (uniforms[key]   = value) for key, value of shader.uniforms
-      (varyings[key]   = value) for key, value of shader.varyings
-      (attributes[key] = value) for key, value of shader.attributes
+    for (let shader of [vertex, fragment]) {
+      var value;
+      for (var key in shader.uniforms) { value = shader.uniforms[key]; uniforms[key]   = value; }
+      for (key in shader.varyings) { value = shader.varyings[key]; varyings[key]   = value; }
+      for (key in shader.attributes) { value = shader.attributes[key]; attributes[key] = value; }
+    }
 
-    options.vertexShader   = vertex  .code
-    options.vertexGraph    = vertex  .graph
-    options.fragmentShader = fragment.code
-    options.fragmentGraph  = fragment.graph
-    options.attributes     = attributes
-    options.uniforms       = uniforms
-    options.varyings       = varyings
-    options.inspect        = () ->
-      Visualize.inspect 'Vertex Shader', vertex, 'Fragment Shader', fragment.graph
+    options.vertexShader   = vertex  .code;
+    options.vertexGraph    = vertex  .graph;
+    options.fragmentShader = fragment.code;
+    options.fragmentGraph  = fragment.graph;
+    options.attributes     = attributes;
+    options.uniforms       = uniforms;
+    options.varyings       = varyings;
+    options.inspect        = () => Visualize.inspect('Vertex Shader', vertex, 'Fragment Shader', fragment.graph);
 
-    @tock 'Material build' if debug
+    if (debug) { this.tock('Material build'); }
 
-    options
+    return options;
+  }
 
-  inspect: () ->
-    Visualize.inspect 'Vertex Shader', @vertex, 'Fragment Shader', @fragment.graph
+  inspect() {
+    return Visualize.inspect('Vertex Shader', this.vertex, 'Fragment Shader', this.fragment.graph);
+  }
+}
 
-module.exports = Material
+module.exports = Material;

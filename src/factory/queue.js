@@ -1,59 +1,73 @@
-# Least-recently-used queue for key expiry via linked list
-queue = (limit = 100) ->
-  map = {}
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+// Least-recently-used queue for key expiry via linked list
+const queue = function(limit) {
+  if (limit == null) { limit = 100; }
+  const map = {};
 
-  head  = null
-  tail  = null
-  count = 0
+  let head  = null;
+  let tail  = null;
+  let count = 0;
 
-  # Insert at front
-  add = (item) ->
-    item.prev = null
-    item.next = head
+  // Insert at front
+  const add = function(item) {
+    item.prev = null;
+    item.next = head;
 
-    head.prev = item if head?
+    if (head != null) { head.prev = item; }
 
-    head      = item
-    tail      = item if !tail?
+    head      = item;
+    if ((tail == null)) { return tail      = item; }
+  };
 
-  # Remove from list
-  remove = (item) ->
-    prev = item.prev
-    next = item.next
+  // Remove from list
+  const remove = function(item) {
+    const { prev } = item;
+    const { next } = item;
 
-    prev.next = next if prev?
-    next.prev = prev if next?
+    if (prev != null) { prev.next = next; }
+    if (next != null) { next.prev = prev; }
 
-    head = next      if head == item
-    tail = prev      if tail == item
+    if (head === item) { head = next; }
+    if (tail === item) { return tail = prev; }
+  };
 
-  # Push key to top of list
-  (key) ->
-    if item = map[key] and item != head
-      # Already in queue
-      remove item
-      add    item
+  // Push key to top of list
+  return function(key) {
+    let dead, item;
+    if (item = map[key] && (item !== head)) {
+      // Already in queue
+      remove(item);
+      add(item);
 
-    else
-      # Check capacity
-      if count == limit
-        # Pop tail
-        dead = tail.key
-        remove tail
+    } else {
+      // Check capacity
+      if (count === limit) {
+        // Pop tail
+        dead = tail.key;
+        remove(tail);
 
-        # Expire key
-        delete map[dead]
-      else
-        count++
+        // Expire key
+        delete map[dead];
+      } else {
+        count++;
+      }
 
-      # Replace head
-      item = next: head, prev: null, key: key
-      add item
+      // Replace head
+      item = {next: head, prev: null, key};
+      add(item);
 
-      # Map record for lookup
-      map[key] = item
+      // Map record for lookup
+      map[key] = item;
+    }
 
-    # Return expired key
-    dead
+    // Return expired key
+    return dead;
+  };
+};
 
-module.exports = queue
+module.exports = queue;

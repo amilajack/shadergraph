@@ -1,192 +1,233 @@
-Graph  = require './graph'
-Outlet = require './outlet'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const Graph  = require('./graph');
+const Outlet = require('./outlet');
 
-###
+/*
  Node in graph.
-###
-class Node
-  @index: 0
-  @id: (name) -> ++Node.index
+*/
+class Node {
+  static initClass() {
+    this.index = 0;
+  }
+  static id(name) { return ++Node.index; }
 
-  constructor: (@owner, outlets) ->
-    @graph   = null
-    @inputs  = []
-    @outputs = []
-    @all     = []
-    @outlets = null
-    @id      = Node.id()
+  constructor(owner, outlets) {
+    this.owner = owner;
+    this.graph   = null;
+    this.inputs  = [];
+    this.outputs = [];
+    this.all     = [];
+    this.outlets = null;
+    this.id      = Node.id();
 
-    @setOutlets outlets
+    this.setOutlets(outlets);
+  }
 
-  # Retrieve input
-  getIn: (name) ->
-    (outlet for outlet in @inputs when outlet.name == name)[0]
+  // Retrieve input
+  getIn(name) {
+    return (Array.from(this.inputs).filter((outlet) => outlet.name === name))[0];
+  }
 
-  # Retrieve output
-  getOut: (name) ->
-    (outlet for outlet in @outputs when outlet.name == name)[0]
+  // Retrieve output
+  getOut(name) {
+    return (Array.from(this.outputs).filter((outlet) => outlet.name === name))[0];
+  }
 
-  # Retrieve by name
-  get: (name) ->
-    @getIn(name) || @getOut(name)
+  // Retrieve by name
+  get(name) {
+    return this.getIn(name) || this.getOut(name);
+  }
 
-  # Set new outlet definition
-  setOutlets: (outlets) ->
-    if outlets?
-      # First init
-      if !@outlets?
-        @outlets = {}
-        for outlet in outlets
-          outlet = Outlet.make outlet if outlet !instanceof Outlet
-          @_add outlet
-        return
+  // Set new outlet definition
+  setOutlets(outlets) {
+    if (outlets != null) {
+      // First init
+      let outlet;
+      if ((this.outlets == null)) {
+        this.outlets = {};
+        for (outlet of Array.from(outlets)) {
+          if (!(outlet instanceof Outlet)) { outlet = Outlet.make(outlet); }
+          this._add(outlet);
+        }
+        return;
+      }
 
-      # Return new/old outlet matching hash key
-      hash = (outlet) ->
-        # Match by name, direction and type.
+      // Return new/old outlet matching hash key
+      const hash = outlet =>
+        // Match by name, direction and type.
         [outlet.name, outlet.inout, outlet.type].join('-')
+      ;
 
-      # Build hash of new outlets
-      match = {}
-      match[hash(outlet)] = true for outlet in outlets
+      // Build hash of new outlets
+      const match = {};
+      for (outlet of Array.from(outlets)) { match[hash(outlet)] = true; }
 
-      # Remove missing outlets, record matches
-      for key, outlet of @outlets
-        key = hash(outlet)
-        if match[key]
-          match[key] = outlet
-        else
-          @_remove outlet
+      // Remove missing outlets, record matches
+      for (let key in this.outlets) {
+        outlet = this.outlets[key];
+        key = hash(outlet);
+        if (match[key]) {
+          match[key] = outlet;
+        } else {
+          this._remove(outlet);
+        }
+      }
 
-      # Insert new outlets
-      for outlet in outlets
-        # Find match by hash
-        existing = match[hash(outlet)]
-        if existing instanceof Outlet
-          # Update existing outlets in place to retain connections.
-          @_morph existing, outlet
-        else
-          # Spawn new outlet
-          outlet = Outlet.make outlet if outlet !instanceof Outlet
-          @_add outlet
+      // Insert new outlets
+      for (outlet of Array.from(outlets)) {
+        // Find match by hash
+        const existing = match[hash(outlet)];
+        if (existing instanceof Outlet) {
+          // Update existing outlets in place to retain connections.
+          this._morph(existing, outlet);
+        } else {
+          // Spawn new outlet
+          if (!(outlet instanceof Outlet)) { outlet = Outlet.make(outlet); }
+          this._add(outlet);
+        }
+      }
 
-      @
-    @outlets
+      this;
+    }
+    return this.outlets;
+  }
 
-  # Connect to the target node by matching up inputs and outputs.
-  connect: (node, empty, force) ->
-    outlets = {}
-    hints = {}
+  // Connect to the target node by matching up inputs and outputs.
+  connect(node, empty, force) {
+    let dests, hint, type;
+    const outlets = {};
+    const hints = {};
 
-    typeHint = (outlet) -> type + '/' + outlet.hint
+    const typeHint = outlet => type + '/' + outlet.hint;
 
-    # Hash the types/hints of available target outlets.
-    for dest in node.inputs
-      # Only autoconnect if not already connected
-      continue if !force && dest.input
+    // Hash the types/hints of available target outlets.
+    for (var dest of Array.from(node.inputs)) {
+      // Only autoconnect if not already connected
+      var list;
+      if (!force && dest.input) { continue; }
 
-      # Match outlets by type/name hint, then type/position key
-      type = dest.type
-      hint = typeHint dest
+      // Match outlets by type/name hint, then type/position key
+      ({ type } = dest);
+      hint = typeHint(dest);
 
-      hints[hint] = dest if !hints[hint]
-      outlets[type] = list = outlets[type] || []
-      list.push dest
+      if (!hints[hint]) { hints[hint] = dest; }
+      outlets[type] = (list = outlets[type] || []);
+      list.push(dest);
+    }
 
-    # Available source outlets
-    sources = @outputs
+    // Available source outlets
+    let sources = this.outputs;
 
-    # Ignore connected source if only matching empties.
-    sources = sources.filter (outlet) -> !(empty and outlet.output.length)
+    // Ignore connected source if only matching empties.
+    sources = sources.filter(outlet => !(empty && outlet.output.length));
 
-    # Match hints first
-    for source in sources.slice()
+    // Match hints first
+    for (var source of Array.from(sources.slice())) {
 
-      # Match outlets by type and name
-      type = source.type
-      hint = typeHint source
-      dests = outlets[type]
+      // Match outlets by type and name
+      ({ type } = source);
+      hint = typeHint(source);
+      dests = outlets[type];
 
-      # Connect if found
-      if dest = hints[hint]
-        source.connect dest
+      // Connect if found
+      if (dest = hints[hint]) {
+        source.connect(dest);
 
-        # Remove from potential set
-        delete hints[hint]
-        dests  .splice dests.indexOf(dest),     1
-        sources.splice sources.indexOf(source), 1
+        // Remove from potential set
+        delete hints[hint];
+        dests  .splice(dests.indexOf(dest),     1);
+        sources.splice(sources.indexOf(source), 1);
+      }
+    }
 
-    # Match what's left
-    return @ unless sources.length
-    for source in sources.slice()
+    // Match what's left
+    if (!sources.length) { return this; }
+    for (source of Array.from(sources.slice())) {
 
-      type = source.type
-      dests = outlets[type]
+      ({ type } = source);
+      dests = outlets[type];
 
-      # Match outlets by type and order
-      if dests && dests.length
-        # Link up and remove from potential set
-        source.connect dests.shift()
+      // Match outlets by type and order
+      if (dests && dests.length) {
+        // Link up and remove from potential set
+        source.connect(dests.shift());
+      }
+    }
 
-    @
+    return this;
+  }
 
-  # Disconnect entire node
-  disconnect: (node) ->
-    outlet.disconnect() for outlet in @inputs
-    outlet.disconnect() for outlet in @outputs
+  // Disconnect entire node
+  disconnect(node) {
+    for (var outlet of Array.from(this.inputs)) { outlet.disconnect(); }
+    for (outlet of Array.from(this.outputs)) { outlet.disconnect(); }
 
-    @
+    return this;
+  }
 
-  # Return hash key for outlet
-  _key: (outlet) ->
-    [outlet.name, outlet.inout].join('-')
+  // Return hash key for outlet
+  _key(outlet) {
+    return [outlet.name, outlet.inout].join('-');
+  }
 
-  # Add outlet object to node
-  _add: (outlet) ->
-    key = @_key outlet
+  // Add outlet object to node
+  _add(outlet) {
+    const key = this._key(outlet);
 
-    # Sanity checks
-    throw new Error "Adding outlet to two nodes at once." if outlet.node
-    throw new Error "Adding two identical outlets to same node. (#{key})" if @outlets[key]
+    // Sanity checks
+    if (outlet.node) { throw new Error("Adding outlet to two nodes at once."); }
+    if (this.outlets[key]) { throw new Error(`Adding two identical outlets to same node. (${key})`); }
 
-    # Link back outlet
-    outlet.node = @
+    // Link back outlet
+    outlet.node = this;
 
-    # Add to name hash and inout list
-    @inputs.push(outlet)  if outlet.inout == Graph.IN
-    @outputs.push(outlet) if outlet.inout == Graph.OUT
-    @all.push(outlet)
-    @outlets[key] = outlet
+    // Add to name hash and inout list
+    if (outlet.inout === Graph.IN) { this.inputs.push(outlet); }
+    if (outlet.inout === Graph.OUT) { this.outputs.push(outlet); }
+    this.all.push(outlet);
+    return this.outlets[key] = outlet;
+  }
 
-  # Morph outlet to other
-  _morph: (existing, outlet) ->
-    key = @_key outlet
-    delete @outlets[key]
+  // Morph outlet to other
+  _morph(existing, outlet) {
+    let key = this._key(outlet);
+    delete this.outlets[key];
 
-    existing.morph outlet
+    existing.morph(outlet);
 
-    key = @_key outlet
-    @outlets[key] = outlet
+    key = this._key(outlet);
+    return this.outlets[key] = outlet;
+  }
 
-  # Remove outlet object from node.
-  _remove: (outlet) ->
-    key = @_key outlet
-    inout = outlet.inout
+  // Remove outlet object from node.
+  _remove(outlet) {
+    const key = this._key(outlet);
+    const { inout } = outlet;
 
-    # Sanity checks
-    throw new Error "Removing outlet from wrong node." if outlet.node != @
+    // Sanity checks
+    if (outlet.node !== this) { throw new Error("Removing outlet from wrong node."); }
 
-    # Disconnect outlet.
-    outlet.disconnect()
+    // Disconnect outlet.
+    outlet.disconnect();
 
-    # Unlink outlet.
-    outlet.node = null
+    // Unlink outlet.
+    outlet.node = null;
 
-    # Remove from name list and inout list.
-    delete @outlets[key]
-    @inputs .splice(@inputs .indexOf(outlet), 1) if outlet.inout == Graph.IN
-    @outputs.splice(@outputs.indexOf(outlet), 1) if outlet.inout == Graph.OUT
-    @all    .splice(@all    .indexOf(outlet), 1)
-    @
+    // Remove from name list and inout list.
+    delete this.outlets[key];
+    if (outlet.inout === Graph.IN) { this.inputs .splice(this.inputs .indexOf(outlet), 1); }
+    if (outlet.inout === Graph.OUT) { this.outputs.splice(this.outputs.indexOf(outlet), 1); }
+    this.all    .splice(this.all    .indexOf(outlet), 1);
+    return this;
+  }
+}
+Node.initClass();
 
-module.exports = Node
+module.exports = Node;
