@@ -1,7 +1,8 @@
 // TODO: This file was created by bulk-decaffeinate.
 // Sanity-check the conversion and remove this comment.
-exports.Block    = require('./block');
-exports.Call     = require('./call');
-exports.Callback = require('./callback');
-exports.Isolate  = require('./isolate');
-exports.Join     = require('./join');
+export const Block = require('./block');
+
+export const Call = require('./call');
+export const Callback = require('./callback');
+export const Isolate = require('./isolate');
+export const Join = require('./join');

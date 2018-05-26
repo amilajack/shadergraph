@@ -7,11 +7,11 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let markup, serialize;
-const { Graph } = require('../Graph');
+// let markup;
+import { Graph } from '../Graph';
 
-exports.serialize = (serialize = require('./serialize'));
-exports.markup    = (markup    = require('./markup'));
+export const serialize = require('./serialize');
+export const markup = markup    = require('./markup');
 
 const visualize = function(graph) {
   if (!graph) { return; }
@@ -42,12 +42,12 @@ var merge = function(args) {
   return out;
 };
 
-exports.visualize = function() {
+export const visualize = function() {
   const list = merge(resolve([].slice.call(arguments)));
   return markup.merge((Array.from(list).filter((graph) => graph).map((graph) => visualize(graph))));
 };
 
-exports.inspect = function() {
+export const inspect = function() {
   const contents = exports.visualize.apply(null, arguments);
   const element  = markup.overlay(contents);
 

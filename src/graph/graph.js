@@ -84,4 +84,4 @@ class Graph {
 }
 Graph.initClass();
 
-module.exports = Graph;
+export default Graph;

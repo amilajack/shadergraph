@@ -11,8 +11,9 @@
   Fetches snippets once, clones for reuse
   Inline code is hashed to avoid bloat
 */
-const queue = require('./queue');
-const hash  = require('./hash');
+import queue from './queue';
+
+import hash from './hash';
 
 const cache = function(fetch) {
   const cached = {};
@@ -32,4 +33,4 @@ const cache = function(fetch) {
   };
 };
 
-module.exports = cache;
+export default cache;

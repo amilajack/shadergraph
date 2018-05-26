@@ -1,10 +1,10 @@
 // TODO: This file was created by bulk-decaffeinate.
 // Sanity-check the conversion and remove this comment.
-exports.Snippet  = require('./snippet');
-exports.Program  = require('./program');
-exports.Layout   = require('./layout');
-exports.assemble = require('./assemble');
-exports.link     = require('./link');
-exports.priority = require('./priority');
+export const Snippet = require('./snippet');
 
-exports.load = exports.Snippet.load;
+export const Program = require('./program');
+export const Layout = require('./layout');
+export const assemble = require('./assemble');
+export const link = require('./link');
+export const priority = require('./priority');
+export const load = exports.Snippet.load;

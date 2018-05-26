@@ -72,4 +72,4 @@ const queue = function(limit) {
   };
 };
 
-module.exports = queue;
+export default queue;

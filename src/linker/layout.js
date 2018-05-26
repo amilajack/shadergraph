@@ -6,8 +6,9 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const Snippet  = require('./snippet');
-const link     = require('./link');
+import Snippet from './snippet';
+
+import link from './link';
 
 const debug = false;
 
@@ -63,4 +64,4 @@ class Layout {
 }
 
 
-module.exports = Layout;
+export default Layout;

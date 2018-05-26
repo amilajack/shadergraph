@@ -1,9 +1,9 @@
 // TODO: This file was created by bulk-decaffeinate.
 // Sanity-check the conversion and remove this comment.
-exports.Factory  = require('./factory');
-exports.Material = require('./material');
+export const Factory = require('./factory');
 
-exports.library   = require('./library');
-exports.cache     = require('./cache');
-exports.queue     = require('./queue');
-exports.hash      = require('./hash');
+export const Material = require('./material');
+export const library = require('./library');
+export const cache = require('./cache');
+export const queue = require('./queue');
+export const hash = require('./hash');

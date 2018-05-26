@@ -61,4 +61,4 @@ const hash = function(string) {
   return h ^= h >>> 16;
 };
 
-module.exports = hash;
+export default hash;

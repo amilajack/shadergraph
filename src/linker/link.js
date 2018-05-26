@@ -8,8 +8,9 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const Graph      = require('../graph');
-const Priority   = require('./priority');
+import Graph from '../graph';
+
+import Priority from './priority';
 
 /*
  Callback linker
@@ -132,4 +133,4 @@ const link = function(language, links, modules, exported) {
 };
 
 
-module.exports = link;
+export default link;

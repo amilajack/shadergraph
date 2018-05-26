@@ -8,7 +8,7 @@
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
 // Dump graph for debug/visualization purposes
-const Block = require('../block');
+import Block from '../block';
 
 const isCallback = outlet => outlet.type[0] === '(';
 
@@ -99,4 +99,4 @@ var serialize = function(graph) {
   return {nodes, links};
 };
 
-module.exports = serialize;
+export default serialize;

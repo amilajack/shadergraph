@@ -7,7 +7,7 @@
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
 const debug = false;
-const Visualize = require('../visualize');
+import Visualize from '../visualize';
 
 const tick = function() {
   const now = +new Date;
@@ -61,4 +61,4 @@ class Material {
   }
 }
 
-module.exports = Material;
+export default Material;

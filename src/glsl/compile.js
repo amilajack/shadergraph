@@ -99,4 +99,4 @@ var string_compiler = function(code, placeholders) {
   };
 };
 
-module.exports = compile;
+export default compile;

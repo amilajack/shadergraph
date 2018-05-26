@@ -7,13 +7,12 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-import * as Block from './block/index.js';
-
-import * as Factory from './factory/index.js';
-import * as GLSL from './glsl/index.js';
-import * as Graph from './graph/index.js';
-import * as Linker from './linker/index.js';
-import * as Visualize from './visualize/index.js';
+const Block     = require('./block');
+const Factory   = require('./factory');
+const GLSL      = require('./glsl');
+const Graph     = require('./graph');
+const Linker    = require('./linker');
+const Visualize = require('./visualize');
 
 const { library }   = Factory;
 const { cache }     = Factory;
@@ -74,5 +73,5 @@ class ShaderGraph {
 }
 ShaderGraph.initClass();
 
-export default ShaderGraph;
+module.exports = ShaderGraph;
 if (typeof window !== 'undefined') { window.ShaderGraph = ShaderGraph; }

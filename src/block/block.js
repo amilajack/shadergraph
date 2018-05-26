@@ -10,9 +10,10 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const Graph   = require('../graph');
-const { Program } = require('../linker');
-const { Layout }  = require('../linker');
+import Graph from '../graph';
+
+import { Program } from '../linker';
+import { Layout } from '../linker';
 
 const debug = false;
 
@@ -151,7 +152,7 @@ var OutletError = function(message) {
 
 OutletError.prototype = new Error;
 
-module.exports = Block;
+export default Block;
 function __guard__(value, transform) {
   return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
 }

@@ -135,4 +135,4 @@ class Snippet {
 }
 Snippet.initClass();
 
-module.exports = Snippet;
+export default Snippet;

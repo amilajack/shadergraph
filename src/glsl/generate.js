@@ -9,14 +9,14 @@
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
 let _;
-const Graph = require('../graph');
-const $     = require('./constants');
+import Graph from '../graph';
+import $ from './constants';
 
 /*
  GLSL code generator for compiler and linker stubs
 */
 
-module.exports = (_ = {
+export default _ = {
 
   // Check if shadow outlet
   unshadow(name) {
@@ -366,4 +366,4 @@ module.exports = (_ = {
 
     return defs.concat(out).join("\n");
   }
-});
+};

@@ -7,8 +7,9 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const Snippet  = require('./snippet');
-const assemble = require('./assemble');
+import Snippet from './snippet';
+
+import assemble from './assemble';
 
 /*
   Program assembly model
@@ -70,6 +71,6 @@ class Program {
 }
 Program.initClass();
 
-module.exports = Program;
+export default Program;
 
 

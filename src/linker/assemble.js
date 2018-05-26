@@ -8,8 +8,9 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const Graph      = require('../graph');
-const Priority   = require('./priority');
+import Graph from '../graph';
+
+import Priority from './priority';
 
 /*
   Program assembler
@@ -175,5 +176,5 @@ const assemble = function(language, namespace, calls, requires) {
   return process();
 };
 
-module.exports = assemble;
+export default assemble;
 

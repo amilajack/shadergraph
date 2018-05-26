@@ -9,10 +9,11 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const tokenizer = require('../../vendor/glsl-tokenizer');
-const parser    = require('../../vendor/glsl-parser');
-const decl      = require('./decl');
-const $         = require('./constants');
+import tokenizer from '../../vendor/glsl-tokenizer';
+
+import parser from '../../vendor/glsl-parser';
+import decl from './decl';
+import $ from './constants';
 
 let debug = false;
 
@@ -261,6 +262,6 @@ var tick = function() {
 };
 
 
-module.exports = walk;
-module.exports = parse;
+export default walk;
+export default parse;
 

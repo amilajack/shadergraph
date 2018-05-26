@@ -8,8 +8,9 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const Graph   = require('../graph');
-const Block   = require('./block');
+import Graph from '../graph';
+
+import Block from './block';
 
 /*
   Re-use a subgraph as a callback
@@ -102,4 +103,4 @@ class Callback extends Block {
   }
 }
 
-module.exports = Callback;
+export default Callback;

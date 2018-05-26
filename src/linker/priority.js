@@ -7,15 +7,15 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-exports.make = function(x) {
+export const make = function(x) {
   if ((x == null)) { x = []; }
   if (!(x instanceof Array)) { x = [+x != null ? +x : 0]; }
   return x;
 };
 
-exports.nest = (a, b) => a.concat(b);
+export const nest = (a, b) => a.concat(b);
 
-exports.compare = function(a, b) {
+export const compare = function(a, b) {
   const n = Math.min(a.length, b.length);
   for (let i = 0, end = n, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
     const p = a[i];
@@ -32,6 +32,6 @@ exports.compare = function(a, b) {
   if (a > b) { return -1; } else if (a < b) { return 1; } else { return 0; }
 };
 
-exports.max  = function(a, b) {
-  if (exports.compare(a, b) > 0) { return b; } else { return a; }
+export const max = function(a, b) {
+  if (compare(a, b) > 0) { return b; } else { return a; }
 };

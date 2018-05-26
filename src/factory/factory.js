@@ -8,9 +8,10 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const { Graph }     = require('../graph');
-const Block     = require('../block');
-const Visualize = require('../visualize');
+import { Graph } from '../graph';
+
+import Block from '../block';
+import Visualize from '../visualize';
 
 /*
   Chainable factory
@@ -408,4 +409,4 @@ class State {
   }
 }
 
-module.exports = Factory;
+export default Factory;

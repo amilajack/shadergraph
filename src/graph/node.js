@@ -8,8 +8,9 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const Graph  = require('./graph');
-const Outlet = require('./outlet');
+import Graph from './graph';
+
+import Outlet from './outlet';
 
 /*
  Node in graph.
@@ -232,4 +233,4 @@ class Node {
 }
 Node.initClass();
 
-module.exports = Node;
+export default Node;

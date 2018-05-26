@@ -48,4 +48,4 @@ const library = function(language, snippets, load) {
 };
 
 
-module.exports = library;
+export default library;

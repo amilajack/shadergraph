@@ -10,7 +10,7 @@
 // AST node parsers
 
 let decl;
-module.exports = (decl = {});
+export default decl = {};
 
 decl.in    = 0;
 decl.out   = 1;

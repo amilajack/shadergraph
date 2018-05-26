@@ -6,9 +6,8 @@
     "type": "git",
     "url": "https://github.com/unconed/shadergraph.git"
   },
-  "main": "src/index.coffee",
   "scripts": {
-    "test": "gulp test"
+    "build": "rollup ./src/index.js --o bundle.js -f esm"
   },
   "dependencies": {
     "three": "^0.72.0"
@@ -30,6 +29,7 @@
     "karma-chrome-launcher": "^0.2.1",
     "karma-coffee-preprocessor": "^0.3.0",
     "karma-jasmine": "^0.3.6",
+    "rollup": "^0.59.2",
     "run-sequence": "^1.1.4"
   },
   "author": "Steven Wittens",
