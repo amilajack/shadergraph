@@ -13,11 +13,13 @@
 class Graph {
   static initClass() {
     this.index = 0;
-  
     this.IN = 0;
     this.OUT = 1;
   }
-  static id(name) { return ++Graph.index; }
+
+  static id(name) {
+    return ++Graph.index;
+  }
 
   constructor(nodes, parent = null) {
     this.parent = parent;
@@ -42,11 +44,15 @@ class Graph {
     return outputs;
   }
 
-  getIn(name) { return (Array.from(this.inputs()).filter((outlet) => outlet.name === name))[0]; }
-  getOut(name) { return (Array.from(this.outputs()).filter((outlet) => outlet.name === name))[0]; }
+  getIn(name) {
+    return (Array.from(this.inputs()).filter((outlet) => outlet.name === name))[0];
+  }
+
+  getOut(name) {
+    return (Array.from(this.outputs()).filter((outlet) => outlet.name === name))[0];
+  }
 
   add(node, ignore) {
-
     if (node.length) {
       for (let _node of Array.from(node)) { this.add(_node); }
       return;
@@ -82,6 +88,7 @@ class Graph {
     return this.add(node, true);
   }
 }
+
 Graph.initClass();
 
 export default Graph;

@@ -231,6 +231,7 @@ class Node {
     return this;
   }
 }
+
 Node.initClass();
 
 export default Node;

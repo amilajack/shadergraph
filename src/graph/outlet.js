@@ -15,9 +15,9 @@ import Graph from './graph';
 */
 class Outlet {
   static initClass() {
-  
     this.index = 0;
   }
+
   static make(outlet, extra) {
     if (extra == null) { extra = {}; }
     const meta = extra;
@@ -28,6 +28,7 @@ class Outlet {
                outlet.type,
                meta);
   }
+
   static id(name) {
     return `_io_${++Outlet.index}_${name}`;
   }

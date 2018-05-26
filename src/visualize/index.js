@@ -8,12 +8,12 @@
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
 // let markup;
-import { Graph } from '../Graph';
+import { Graph } from '../graph/index.js';
 
 export const serialize = require('./serialize');
 export const markup = markup    = require('./markup');
 
-const visualize = function(graph) {
+function _visualize(graph) {
   if (!graph) { return; }
   if (!graph.nodes) { return graph; }
 
@@ -21,8 +21,8 @@ const visualize = function(graph) {
   return markup.process(data);
 };
 
-var resolve = function(arg) {
-  if ((arg == null)) { return arg; }
+function resolve(arg) {
+  if (arg == null) { return arg; }
   if (arg instanceof Array) { return arg.map(resolve); }
   if ((arg.vertex != null) && (arg.fragment != null)) { return [resolve(arg.vertex, resolve(arg.fragment))]; }
   if (arg._graph != null) { return arg._graph; }
@@ -30,7 +30,7 @@ var resolve = function(arg) {
   return arg;
 };
 
-var merge = function(args) {
+function merge(args) {
   let out = [];
   for (let arg of Array.from(args)) {
     if (arg instanceof Array) {
@@ -42,16 +42,18 @@ var merge = function(args) {
   return out;
 };
 
-export const visualize = function() {
-  const list = merge(resolve([].slice.call(arguments)));
-  return markup.merge((Array.from(list).filter((graph) => graph).map((graph) => visualize(graph))));
+export function visualize() {
+  // const list = merge(resolve([].slice.call(arguments)));
+  const list = [];
+  return markup.merge((Array.from(list).filter((graph) => graph).map((graph) => _visualize(graph))));
 };
 
-export const inspect = function() {
-  const contents = exports.visualize.apply(null, arguments);
+export function inspect() {
   const element  = markup.overlay(contents);
 
-  for (let el of Array.from(document.querySelectorAll('.shadergraph-overlay'))) { el.remove(); }
+  for (let el of Array.from(document.querySelectorAll('.shadergraph-overlay'))) {
+    el.remove();
+  }
   document.body.appendChild(element);
   contents.update();
 
